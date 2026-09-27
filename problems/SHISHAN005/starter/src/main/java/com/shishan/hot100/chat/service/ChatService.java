@@ -76,7 +76,6 @@ public class ChatService {
         if (message != null) {
             message.setAcked(true);
             message.setAckedAt(System.currentTimeMillis());
-            messageRepository.registerAck(message.getClientMsgId(), message);
             metricsService.recordAck();
             return true;
         }
