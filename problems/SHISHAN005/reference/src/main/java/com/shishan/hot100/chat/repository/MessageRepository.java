@@ -5,7 +5,10 @@ import com.shishan.hot100.chat.model.PageResult;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -13,17 +16,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MessageRepository {
     private final AtomicLong idGenerator = new AtomicLong(1000);
     private final List<Message> messages = new CopyOnWriteArrayList<>();
+    private final Map<String, Message> idempotencyCache = new ConcurrentHashMap<>();
 
     public Message findByClientMsgId(String clientMsgId) {
         if (clientMsgId == null) {
             return null;
         }
-        for (Message msg : messages) {
-            if (clientMsgId.equals(msg.getClientMsgId())) {
-                return msg;
-            }
-        }
-        return null;
+        return idempotencyCache.get(clientMsgId);
     }
 
     public Message save(Message message) {
@@ -31,6 +30,9 @@ public class MessageRepository {
             message.setId(idGenerator.incrementAndGet());
         }
         messages.add(message);
+        if (message.getClientMsgId() != null) {
+            idempotencyCache.put(message.getClientMsgId(), message);
+        }
         return message;
     }
 
@@ -57,32 +59,38 @@ public class MessageRepository {
     }
 
     public PageResult findHistory(String conversationId, Long before, int limit) {
-        List<Message> filtered = new ArrayList<>();
-        int total = 0;
+        List<Message> conversationMessages = new ArrayList<>();
         for (Message msg : messages) {
             if (conversationId.equals(msg.getConversationId())) {
-                total++;
-                if (before == null || msg.getId() < before) {
-                    filtered.add(msg);
+                conversationMessages.add(msg);
+            }
+        }
+        conversationMessages.sort(Comparator.comparingLong(Message::getId).reversed());
+
+        int startIndex = 0;
+        if (before != null) {
+            for (int i = 0; i < conversationMessages.size(); i++) {
+                if (conversationMessages.get(i).getId().equals(before)) {
+                    startIndex = i + 1;
+                    break;
                 }
             }
         }
-        filtered.sort((a, b) -> Long.compare(b.getId(), a.getId()));
 
         List<Message> page = new ArrayList<>();
-        for (int i = 0; i < filtered.size() && i < limit; i++) {
-            page.add(filtered.get(i));
+        for (int i = startIndex; i < conversationMessages.size() && page.size() < limit; i++) {
+            page.add(conversationMessages.get(i));
         }
 
         Long nextCursor = page.isEmpty() ? null : page.get(page.size() - 1).getId();
-        boolean hasMore = filtered.size() > limit;
-        return new PageResult(page, hasMore, nextCursor, total);
+        boolean hasMore = (startIndex + page.size()) < conversationMessages.size();
+        return new PageResult(page, hasMore, nextCursor, conversationMessages.size());
     }
 
-    public List<Message> findUnackedMessagesBefore(long thresholdTimestamp) {
+    public List<Message> findUnackedMessages() {
         List<Message> result = new ArrayList<>();
         for (Message msg : messages) {
-            if (!msg.isAcked() && msg.getCreatedAt() <= thresholdTimestamp) {
+            if (!msg.isAcked()) {
                 result.add(msg);
             }
         }
@@ -91,6 +99,7 @@ public class MessageRepository {
 
     public void clear() {
         messages.clear();
+        idempotencyCache.clear();
         idGenerator.set(1000);
     }
 }

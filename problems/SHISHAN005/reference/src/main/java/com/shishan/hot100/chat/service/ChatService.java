@@ -17,14 +17,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ChatService {
     private final AtomicLong sequenceGenerator = new AtomicLong(0);
-    private final Map<String, Message> clientMsgMap = new ConcurrentHashMap<>();
-    private final Object sendLock = new Object();
 
     @Autowired
     private MessageRepository messageRepository;
@@ -35,33 +32,30 @@ public class ChatService {
     @Autowired
     private EventConsumer eventConsumer;
 
-    public Message sendMessage(SendRequest request) {
+    public synchronized Message sendMessage(SendRequest request) {
         String clientMsgId = request.getClientMsgId();
         if (clientMsgId == null || clientMsgId.trim().isEmpty()) {
             clientMsgId = UUID.randomUUID().toString();
         }
 
-        synchronized (sendLock) {
-            Message existing = clientMsgMap.get(clientMsgId);
-            if (existing != null) {
-                return existing;
-            }
-
-            Message message = new Message(
-                    null,
-                    clientMsgId,
-                    request.getConversationId(),
-                    request.getSenderId(),
-                    request.getContent(),
-                    sequenceGenerator.incrementAndGet(),
-                    System.currentTimeMillis()
-            );
-
-            messageRepository.save(message);
-            clientMsgMap.put(clientMsgId, message);
-            eventConsumer.consume(message);
-            return message;
+        Message existing = messageRepository.findByClientMsgId(clientMsgId);
+        if (existing != null) {
+            return existing;
         }
+
+        Message message = new Message(
+                null,
+                clientMsgId,
+                request.getConversationId(),
+                request.getSenderId(),
+                request.getContent(),
+                sequenceGenerator.incrementAndGet(),
+                System.currentTimeMillis()
+        );
+
+        messageRepository.save(message);
+        eventConsumer.consume(message);
+        return message;
     }
 
     public boolean ackMessage(AckRequest request) {
@@ -103,12 +97,9 @@ public class ChatService {
         return new TimelineResult(merged, merged.size());
     }
 
-    public void reset() {
-        synchronized (sendLock) {
-            clientMsgMap.clear();
-            messageRepository.clear();
-            inboxRepository.clear();
-            sequenceGenerator.set(0);
-        }
+    public synchronized void reset() {
+        messageRepository.clear();
+        inboxRepository.clear();
+        sequenceGenerator.set(0);
     }
 }

@@ -9,6 +9,8 @@ import java.util.List;
 
 @Component
 public class CompensationWorker {
+    private static final long TIMEOUT_THRESHOLD_MS = 3000;
+
     @Autowired
     private MessageRepository messageRepository;
 
@@ -16,11 +18,15 @@ public class CompensationWorker {
     private EventConsumer eventConsumer;
 
     public int runCompensation() {
-        long threshold = System.currentTimeMillis() - 3000;
-        List<Message> unacked = messageRepository.findUnackedMessagesBefore(threshold);
+        long now = System.currentTimeMillis();
+        List<Message> unacked = messageRepository.findUnackedMessages();
+        int count = 0;
         for (Message msg : unacked) {
-            eventConsumer.consume(msg);
+            if (now - msg.getCreatedAt() >= TIMEOUT_THRESHOLD_MS) {
+                eventConsumer.consume(msg);
+                count++;
+            }
         }
-        return unacked.size();
+        return count;
     }
 }
