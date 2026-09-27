@@ -1,0 +1,410 @@
+version: 1
+baseUrl: "http://127.0.0.1:18084"
+
+tests:
+  - id: heartbeat
+    type: http
+    name: 心跳探活
+    displayName: 服务就绪检查
+    description: 服务必须已在 18084 端口就绪，返回 {"status":"ok"}
+    request:
+      method: GET
+      url: "${baseUrl}/hello"
+      timeoutMs: 3000
+    expect:
+      status: 200
+      json:
+        status: ok
+      maxMs: 1000
+
+  - id: send-and-inbox-basic
+    type: workflow
+    name: 单消息收发与实时推送基础链路
+    displayName: 单消息收发与实时推送基础链路
+    description: 发送单条消息后，服务端正常持久化并分发到实时收件箱
+    steps:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send
+        name: 发送基础测试消息
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c1"
+            senderId: "u1"
+            clientMsgId: "msg-basic-1"
+            content: "hello basic"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              clientMsgId: "msg-basic-1"
+              conversationId: "c1"
+      - id: check-inbox
+        name: 校验用户实时收件箱
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/inbox?conversationId=c1&userId=u2"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 1
+          contains:
+            - "hello basic"
+      - id: check-history
+        name: 校验历史数据持久化
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/history?conversationId=c1"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              total: 1
+          contains:
+            - "hello basic"
+
+  - id: send-idempotency-concurrent
+    type: workflow
+    name: 快速重发场景下的消息唯一性
+    displayName: 快速重发场景下的消息唯一性
+    description: 相同客户端消息ID进行重复发送时，服务端必须保持唯一消息记录，不得生成重复实体
+    steps:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: first-send
+        name: 首次发送消息
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c1"
+            senderId: "u1"
+            clientMsgId: "retry-client-999"
+            content: "hello idempotency"
+        extract:
+          firstMsgId: "$.data.msgId"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              clientMsgId: "retry-client-999"
+      - id: second-send
+        name: 相同客户端消息ID模拟快速重发
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c1"
+            senderId: "u1"
+            clientMsgId: "retry-client-999"
+            content: "hello idempotency"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              clientMsgId: "retry-client-999"
+      - id: verify-history-count
+        name: 校验落库消息全局唯一且总数为1
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/history?conversationId=c1"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              total: 1
+      - id: verify-inbox-count
+        name: 校验收件箱仅收到一次投递
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/inbox?conversationId=c1&userId=u2"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 1
+
+  - id: cursor-pagination-boundary
+    type: workflow
+    name: 历史消息分页游标边界单调性
+    displayName: 多页历史消息拉取边界游标无重叠
+    description: 使用游标拉取连续多页历史消息，分页交界处的消息不得在相邻页面重复出现
+    steps:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send-1
+        name: 发送消息1
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_page"
+            senderId: "u1"
+            clientMsgId: "page-1"
+            content: "content-page-1"
+      - id: send-2
+        name: 发送消息2
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_page"
+            senderId: "u1"
+            clientMsgId: "page-2"
+            content: "content-page-2"
+      - id: send-3
+        name: 发送消息3
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_page"
+            senderId: "u1"
+            clientMsgId: "page-3"
+            content: "content-page-3"
+      - id: send-4
+        name: 发送消息4
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_page"
+            senderId: "u1"
+            clientMsgId: "page-4"
+            content: "content-page-4"
+      - id: send-5
+        name: 发送消息5
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_page"
+            senderId: "u1"
+            clientMsgId: "page-5"
+            content: "content-page-5"
+      - id: fetch-page-1
+        name: 拉取第1页（最新2条）
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/history?conversationId=c_page&limit=2"
+        extract:
+          cursor1: "$.data.nextCursor"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              hasMore: true
+          contains:
+            - "content-page-5"
+            - "content-page-4"
+      - id: fetch-page-2
+        name: 以第1页末尾游标拉取第2页
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/history?conversationId=c_page&before=${cursor1}&limit=2"
+        expect:
+          status: 200
+          json:
+            code: 0
+          contains:
+            - "content-page-3"
+          notContains:
+            - "content-page-4"
+
+  - id: in-flight-compensation-dedup
+    type: workflow
+    name: 在途传输保护与补偿扫描防重推
+    displayName: 在途传输与补偿扫描时的收信一致性
+    description: 消息处于在途确认阶段触发补偿任务时，不得将未超时的在途消息误判重推
+    steps:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send-inflight
+        name: 发送在途待确认消息
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_flight"
+            senderId: "u1"
+            clientMsgId: "flight-101"
+            content: "inflight test payload"
+        extract:
+          flightId: "$.data.msgId"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: trigger-compensate
+        name: 立即触发未确认补偿扫描
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/compensate"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send-ack
+        name: 客户端正常上报收到确认
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/ack"
+          json:
+            conversationId: "c_flight"
+            msgId: "${flightId}"
+            userId: "u2"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: check-inbox-no-duplicate
+        name: 校验收件箱严禁出现幽灵重复项
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/inbox?conversationId=c_flight&userId=u2"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 1
+
+  - id: timeline-sync-reconnect
+    type: workflow
+    name: 断线重连与全量时间线合流去重
+    displayName: 客户端重连与时间线合流去重
+    description: 客户端重连拉取全量会话时间线时，本地已收信箱与远端历史合流必须全局去重
+    steps:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send-msg-1
+        name: 发送时间线第1条消息
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_timeline"
+            senderId: "u1"
+            clientMsgId: "tl-msg-1"
+            content: "timeline-alpha"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send-msg-2
+        name: 发送时间线第2条消息
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_timeline"
+            senderId: "u1"
+            clientMsgId: "tl-msg-2"
+            content: "timeline-beta"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: get-timeline
+        name: 获取重连合并时间线
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/timeline?conversationId=c_timeline&userId=u2"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              totalCount: 2
+          contains:
+            - "timeline-alpha"
+            - "timeline-beta"
+
+  - id: load-chat-chaos
+    type: load
+    name: 多会话混合高频交互
+    displayName: 多会话消息交互稳定性评测
+    description: 模拟多用户高频发送、补偿扫描、时间线查询与分页拉取的混合负载，保证吞吐与状态稳定
+    concurrency: 8
+    rounds: 15
+    pre:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+    scenarios:
+      - name: send-msg
+        weight: 4
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_load"
+            senderId: "u_stress"
+            content: "stress payload"
+      - name: compensate
+        weight: 2
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/compensate"
+      - name: query-timeline
+        weight: 2
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/timeline?conversationId=c_load&userId=u2"
+      - name: query-history
+        weight: 2
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/history?conversationId=c_load&limit=5"
+    expect:
+      minSuccessRate: 1.0
+      maxP95Ms: 500
+      maxMs: 2000

@@ -59,6 +59,7 @@ Every problem is a **working but bug-ridden** Spring Boot backend service. Downl
 | **02** | [SHISHAN002 · The Two Faces of Shared Wallet](problems/SHISHAN002) | Expert | `Multi-tenant` `Stale Cache` `Consistency` | Two games share a wallet: one sees balance 1000x smaller; top-ups revert on logout. |
 | **03** | [SHISHAN003 · Corrupted File Vault](problems/SHISHAN003) | Candidate Master | `File Storage` `Hashing` `Encoding` | File uploads succeed but cannot be retrieved by hash; downloaded images are corrupted. |
 | **04** | [SHISHAN004 · Time-Warped File Service](problems/SHISHAN004) | Pupil | `File Storage` `Path Mapping` `Runtime` | Upload succeeds, but immediate fetch 404s until service is rebuilt or restarted. |
+| **05** | [SHISHAN005 · Duplicate Message Reception](problems/SHISHAN005) | Grandmaster (Red) | `Distributed State` `Message Lifecycle` `State Sync` | Messages randomly appear 2~3 times; cursor pagination returns overlapping items; reconnect doubles message count. |
 
 ---
 
