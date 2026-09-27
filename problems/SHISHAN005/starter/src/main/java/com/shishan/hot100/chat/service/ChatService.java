@@ -36,6 +36,12 @@ public class ChatService {
     @Autowired
     private MetricsService metricsService;
 
+    @Autowired
+    private AuthService authService;
+
+    @Autowired
+    private com.shishan.hot100.chat.repository.UserRepository userRepository;
+
     public Message sendMessage(SendRequest request) {
         String clientMsgId = request.getClientMsgId();
         if (clientMsgId == null || clientMsgId.trim().isEmpty()) {
@@ -102,5 +108,11 @@ public class ChatService {
         inboxRepository.clear();
         metricsService.reset();
         sequenceGenerator.set(0);
+        if (authService != null) {
+            authService.clearTokens();
+        }
+        if (userRepository != null) {
+            userRepository.clear();
+        }
     }
 }

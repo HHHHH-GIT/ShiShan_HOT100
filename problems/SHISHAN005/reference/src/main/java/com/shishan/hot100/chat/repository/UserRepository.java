@@ -20,6 +20,7 @@ public class UserRepository {
         userMap.put("u1", new User("u1", "alice", "Alice", "ONLINE", "/avatars/alice.png"));
         userMap.put("u2", new User("u2", "bob", "Bob", "ONLINE", "/avatars/bob.png"));
         userMap.put("u3", new User("u3", "carol", "Carol", "AWAY", "/avatars/carol.png"));
+        userMap.put("u_stress", new User("u_stress", "stress", "Stress User", "ONLINE", "/avatars/stress.png"));
         userMap.put("admin", new User("admin", "sysadmin", "Administrator", "ONLINE", "/avatars/admin.png"));
     }
 
@@ -28,6 +29,18 @@ public class UserRepository {
             return null;
         }
         return userMap.get(id);
+    }
+
+    public User findByUsername(String username) {
+        if (username == null) {
+            return null;
+        }
+        for (User u : userMap.values()) {
+            if (username.equalsIgnoreCase(u.getUsername())) {
+                return u;
+            }
+        }
+        return null;
     }
 
     public void save(User user) {

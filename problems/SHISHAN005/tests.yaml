@@ -1,5 +1,8 @@
 version: 1
 baseUrl: "http://127.0.0.1:18084"
+vars:
+  defaultAuthToken: "Bearer token_u1_fixed"
+  stressAuthToken: "Bearer token_stress_fixed"
 
 tests:
   - id: heartbeat
@@ -16,6 +19,136 @@ tests:
       json:
         status: ok
       maxMs: 1000
+
+  - id: auth-full-lifecycle
+    type: workflow
+    name: 用户注册登录与认证聊天全链路
+    displayName: 用户注册登录与认证聊天全链路
+    description: 验证从新用户注册、密码登录换取 Token、携带凭证鉴权发信到收件箱查验的完整业务闭环
+    steps:
+      - id: reset
+        name: 重置测试数据
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/reset"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: register
+        name: 注册新用户
+        request:
+          method: POST
+          url: "${baseUrl}/api/auth/register"
+          json:
+            username: "tester_jim"
+            password: "jim_password_999"
+            nickname: "Jim Tester"
+        extract:
+          newUserId: "$.data.userId"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              username: "tester_jim"
+      - id: login
+        name: 使用密码登录获取访问令牌
+        request:
+          method: POST
+          url: "${baseUrl}/api/auth/login"
+          json:
+            username: "tester_jim"
+            password: "jim_password_999"
+        extract:
+          userToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: send-auth-msg
+        name: 携带鉴权令牌发送测试消息
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "Bearer ${userToken}"
+          json:
+            conversationId: "c_auth_test"
+            senderId: "${newUserId}"
+            clientMsgId: "auth-msg-001"
+            content: "hello authenticated chat"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              clientMsgId: "auth-msg-001"
+      - id: check-auth-inbox
+        name: 校验收件箱能够接收已认证消息
+        request:
+          method: GET
+          url: "${baseUrl}/api/chat/inbox?conversationId=c_auth_test&userId=u2"
+          headers:
+            Authorization: "Bearer ${userToken}"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 1
+          contains:
+            - "hello authenticated chat"
+
+  - id: auth-unauthorized-guard
+    type: workflow
+    name: 未登录与非法凭证安全拦截
+    displayName: 未登录与非法凭证安全拦截
+    description: 验证未携带 Token 或携带无效 Token 时，核心业务接口必须被拦截并返回 401
+    steps:
+      - id: no-token-send
+        name: 未携带凭证直接调用发信接口
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          json:
+            conversationId: "c_guard"
+            senderId: "u1"
+            clientMsgId: "unauth-msg-1"
+            content: "should be rejected"
+        expect:
+          status: 401
+          json:
+            code: 401
+      - id: fake-token-send
+        name: 携带伪造非法凭证调用发信接口
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "Bearer fake_invalid_token_xyz123"
+          json:
+            conversationId: "c_guard"
+            senderId: "u1"
+            clientMsgId: "fake-msg-1"
+            content: "should be rejected"
+        expect:
+          status: 401
+          json:
+            code: 401
+      - id: no-token-recall
+        name: 未携带凭证调用消息撤回接口
+        request:
+          method: POST
+          url: "${baseUrl}/api/chat/recall"
+          json:
+            conversationId: "c_guard"
+            msgId: 99999
+            operatorId: "u1"
+        expect:
+          status: 401
+          json:
+            code: 401
 
   - id: send-and-inbox-basic
     type: workflow
@@ -37,6 +170,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c1"
             senderId: "u1"
@@ -54,6 +189,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/inbox?conversationId=c1&userId=u2"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -67,6 +204,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/history?conversationId=c1"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -96,6 +235,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c1"
             senderId: "u1"
@@ -114,6 +255,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c1"
             senderId: "u1"
@@ -130,6 +273,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/history?conversationId=c1"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -141,6 +286,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/inbox?conversationId=c1&userId=u2"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -168,6 +315,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_page"
             senderId: "u1"
@@ -178,6 +327,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_page"
             senderId: "u1"
@@ -188,6 +339,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_page"
             senderId: "u1"
@@ -198,6 +351,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_page"
             senderId: "u1"
@@ -208,6 +363,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_page"
             senderId: "u1"
@@ -218,6 +375,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/history?conversationId=c_page&limit=2"
+          headers:
+            Authorization: "${defaultAuthToken}"
         extract:
           cursor1: "$.data.nextCursor"
         expect:
@@ -234,6 +393,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/history?conversationId=c_page&before=${cursor1}&limit=2"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -263,6 +424,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_flight"
             senderId: "u1"
@@ -279,6 +442,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/compensate"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -288,6 +453,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/ack"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_flight"
             msgId: "${flightId}"
@@ -301,6 +468,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/inbox?conversationId=c_flight&userId=u2"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -328,6 +497,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_timeline"
             senderId: "u1"
@@ -342,6 +513,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${defaultAuthToken}"
           json:
             conversationId: "c_timeline"
             senderId: "u1"
@@ -356,6 +529,8 @@ tests:
         request:
           method: GET
           url: "${baseUrl}/api/chat/timeline?conversationId=c_timeline&userId=u2"
+          headers:
+            Authorization: "${defaultAuthToken}"
         expect:
           status: 200
           json:
@@ -385,6 +560,8 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/send"
+          headers:
+            Authorization: "${stressAuthToken}"
           json:
             conversationId: "c_load"
             senderId: "u_stress"
@@ -394,16 +571,22 @@ tests:
         request:
           method: POST
           url: "${baseUrl}/api/chat/compensate"
+          headers:
+            Authorization: "${stressAuthToken}"
       - name: query-timeline
         weight: 2
         request:
           method: GET
           url: "${baseUrl}/api/chat/timeline?conversationId=c_load&userId=u2"
+          headers:
+            Authorization: "${stressAuthToken}"
       - name: query-history
         weight: 2
         request:
           method: GET
           url: "${baseUrl}/api/chat/history?conversationId=c_load&limit=5"
+          headers:
+            Authorization: "${stressAuthToken}"
     expect:
       minSuccessRate: 1.0
       maxP95Ms: 500
