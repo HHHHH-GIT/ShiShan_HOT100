@@ -3,7 +3,7 @@
   "title": "消息接收重复问题",
   "difficulty": "grandmaster",
   "tags": ["分布式状态", "消息生命周期", "状态同步"],
-  "summary": "即时通讯服务在线上运行期间，多位用户在移动端和网页端反馈：部分聊天消息在收件箱中重复显示 2~3 次；拉取历史消息时在分页交界处多次出现相同气泡；断线重连刷新会话后，刚发出的消息偶尔闪烁或重复出现。各模块独立测试均正常，但在真实交织场景下出现消息状态异常。",
+  "summary": "公司内部即时通讯服务上线后，多端用户反馈聊天消息频繁出现异常重复：弱网重发出现两条相同气泡、向上滚动翻看历史记录在分页交界处重复、断线重连拉取时间线后整屏消息数量翻倍。前端已抓包自证数据均由后端返回，需定位并解决服务端的消息重复根因。",
   "apiContract": "### 核心接口规范\n\n服务监听端口：`18084`\n\n| 接口路径 | 请求方式 | 核心参数/请求体 | 响应要求 |\n| :--- | :--- | :--- | :--- |\n| `/hello` | `GET` | 无 | 返回状态码 `200`，`{\"status\":\"ok\"}` |\n| `/api/chat/send` | `POST` | `{\"conversationId\":\"c1\",\"senderId\":\"u1\",\"clientMsgId\":\"m1\",\"content\":\"hello\"}` | 发送消息，成功返回 `code: 0` 与消息详情 |\n| `/api/chat/ack` | `POST` | `{\"conversationId\":\"c1\",\"msgId\":1001,\"userId\":\"u2\"}` | 确认接收消息，成功返回 `code: 0` |\n| `/api/chat/inbox` | `GET` | `?conversationId=c1&userId=u2` | 查询用户收件箱消息列表及总数 |\n| `/api/chat/history` | `GET` | `?conversationId=c1&before=1005&limit=2` | 游标分页拉取历史消息 |\n| `/api/chat/timeline` | `GET` | `?conversationId=c1&userId=u2` | 获取合并会话全量时间线 |\n| `/api/chat/compensate` | `POST` | 无 | 触发未确认消息补偿扫描 |\n| `/api/chat/reset` | `POST` | 无 | 重置内存会话与消息状态 |",
   "heartbeat": {
     "port": 18084,
