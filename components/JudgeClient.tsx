@@ -338,7 +338,7 @@ export function JudgeClient({
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
               {problemTitle}
             </h1>
-            <p className="mt-1.5 max-w-2xl text-sm sm:text-base leading-relaxed text-muted">
+            <p className="mt-1.5 max-w-4xl text-sm sm:text-base leading-relaxed text-muted">
               {problemSummary}
             </p>
 
@@ -519,7 +519,7 @@ export function JudgeClient({
       </section>
 
       {/* ================= 实时日志终端 + 提交记录 ================= */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* 现代深色终端控制台 */}
         <section className="card flex min-w-0 flex-col overflow-hidden border-neutral-800 bg-[#18181b] shadow-card">
           <header className="flex items-center justify-between border-b border-neutral-800 bg-[#1f1f23] px-4 py-2.5">

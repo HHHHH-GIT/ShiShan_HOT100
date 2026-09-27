@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,10 +12,29 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('shishan_theme');
+                  var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (theme === 'dark' || (!theme && supportDarkMode)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-paper text-ink antialiased selection:bg-accent/20 selection:text-ink">
         <header className="sticky top-0 z-30 border-b border-line/80 bg-surface/90 backdrop-blur-md">
-          <div className="mx-auto flex h-15 max-w-5xl items-center justify-between px-4 sm:px-6">
+          <div className="mx-auto flex h-15 max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link href="/" className="group flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-surface font-mono text-sm font-bold shadow-xs">
                 #
@@ -29,7 +49,7 @@ export default function RootLayout({
               </div>
             </Link>
 
-            <nav className="flex items-center gap-2 text-sm">
+            <nav className="flex items-center gap-3 text-sm">
               <Link
                 href="/"
                 className="rounded-md px-3.5 py-1.5 font-semibold text-ink transition-colors hover:bg-paper"
@@ -44,14 +64,17 @@ export default function RootLayout({
               >
                 GitHub 仓库
               </a>
+              <div className="border-l border-line/80 pl-3">
+                <ThemeToggle />
+              </div>
             </nav>
           </div>
         </header>
 
-        <main className="mx-auto max-w-5xl px-4 sm:px-6 pb-24 pt-7 sm:pt-9">{children}</main>
+        <main className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-24 pt-7 sm:pt-9">{children}</main>
 
         <footer className="border-t border-line/80 bg-surface/50 py-7 text-xs sm:text-sm text-muted">
-          <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
+          <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6 lg:px-8">
             <p className="text-muted">
               题目下发到本地 · 判题在本机执行 · 数据不出环境
             </p>

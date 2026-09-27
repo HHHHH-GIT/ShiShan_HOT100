@@ -1,28 +1,72 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #f8f9fa;
-  --color-paper-2: #f1f3f5;
-  --color-surface: #ffffff;
-  --color-line: #e5e7eb;
-  --color-line-strong: #d1d5db;
-  --color-ink: #111827;
-  --color-ink-soft: #374151;
-  --color-muted: #6b7280;
-  --color-accent: #ffa116;
-  --color-accent-soft: #fff7ed;
-  --color-ok: #00af9b;
-  --color-ok-soft: #e6f8f5;
-  --color-bad: #ef4444;
-  --color-bad-soft: #fef2f2;
-  --color-warn: #f59e0b;
-  --color-warn-soft: #fffbeb;
+  --color-paper: var(--theme-paper);
+  --color-paper-2: var(--theme-paper-2);
+  --color-surface: var(--theme-surface);
+  --color-line: var(--theme-line);
+  --color-line-strong: var(--theme-line-strong);
+  --color-ink: var(--theme-ink);
+  --color-ink-soft: var(--theme-ink-soft);
+  --color-muted: var(--theme-muted);
+  --color-accent: var(--theme-accent);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-ok: var(--theme-ok);
+  --color-ok-soft: var(--theme-ok-soft);
+  --color-bad: var(--theme-bad);
+  --color-bad-soft: var(--theme-bad-soft);
+  --color-warn: var(--theme-warn);
+  --color-warn-soft: var(--theme-warn-soft);
 
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lift: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card: var(--theme-shadow-card);
+  --shadow-lift: var(--theme-shadow-lift);
+}
+
+:root {
+  --theme-paper: #f8f9fa;
+  --theme-paper-2: #f1f3f5;
+  --theme-surface: #ffffff;
+  --theme-line: #e5e7eb;
+  --theme-line-strong: #d1d5db;
+  --theme-ink: #111827;
+  --theme-ink-soft: #374151;
+  --theme-muted: #6b7280;
+  --theme-accent: #ffa116;
+  --theme-accent-soft: #fff7ed;
+  --theme-ok: #00af9b;
+  --theme-ok-soft: #e6f8f5;
+  --theme-bad: #ef4444;
+  --theme-bad-soft: #fef2f2;
+  --theme-warn: #f59e0b;
+  --theme-warn-soft: #fffbeb;
+
+  --theme-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --theme-shadow-lift: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+}
+
+.dark {
+  --theme-paper: #121214;
+  --theme-paper-2: #18181b;
+  --theme-surface: #1e1e22;
+  --theme-line: #2e2e33;
+  --theme-line-strong: #3f3f46;
+  --theme-ink: #f4f4f5;
+  --theme-ink-soft: #d4d4d8;
+  --theme-muted: #a1a1aa;
+  --theme-accent: #ffa116;
+  --theme-accent-soft: rgba(255, 161, 22, 0.15);
+  --theme-ok: #00af9b;
+  --theme-ok-soft: rgba(0, 175, 155, 0.15);
+  --theme-bad: #ef4444;
+  --theme-bad-soft: rgba(239, 68, 68, 0.15);
+  --theme-warn: #f59e0b;
+  --theme-warn-soft: rgba(245, 158, 11, 0.15);
+
+  --theme-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --theme-shadow-lift: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 /* ---------- 基础层 ---------- */
@@ -38,6 +82,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   body {
@@ -85,7 +130,7 @@
   }
 
   .btn:hover:not(:disabled) {
-    background: var(--color-paper);
+    background: var(--color-paper-2);
     border-color: var(--color-line-strong);
     color: var(--color-ink);
   }
@@ -111,6 +156,18 @@
     color: #ffffff;
   }
 
+  .dark .btn-primary {
+    background: #f4f4f5;
+    border-color: #f4f4f5;
+    color: #111827;
+  }
+
+  .dark .btn-primary:hover:not(:disabled) {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+  }
+
   .btn-accent {
     background: var(--color-accent);
     border-color: var(--color-accent);
@@ -130,7 +187,7 @@
     gap: 0.35rem;
     border-radius: 6px;
     border: 1px solid var(--color-line);
-    background: var(--color-paper);
+    background: var(--color-paper-2);
     color: var(--color-muted);
     padding: 0.16rem 0.55rem;
     font-size: 0.775rem;
@@ -171,7 +228,7 @@
     animation: sweep 1.8s linear infinite;
   }
 
-  /* ---------- 难度段位徽标 ---------- */
+  /* ---------- 亮色难度段位徽标 ---------- */
 
   .tier-newbie {
     border-color: #e2e8f0;
@@ -242,6 +299,66 @@
     background-size: 300% 100%;
     animation: rainbow-shift 3.6s linear infinite;
     font-weight: 600;
+  }
+
+  /* ---------- 暗色难度段位徽标 ---------- */
+
+  .dark .tier-newbie {
+    border-color: #334155;
+    background: #1e293b;
+    color: #94a3b8;
+  }
+
+  .dark .tier-pupil {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+  }
+
+  .dark .tier-specialist {
+    border-color: rgba(20, 184, 166, 0.35);
+    background: rgba(20, 184, 166, 0.12);
+    color: #2dd4bf;
+  }
+
+  .dark .tier-expert {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+  }
+
+  .dark .tier-candidate-master {
+    border-color: rgba(168, 85, 247, 0.35);
+    background: rgba(168, 85, 247, 0.12);
+    color: #c084fc;
+  }
+
+  .dark .tier-master {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+  }
+
+  .dark .tier-international-master {
+    border-color: rgba(249, 115, 22, 0.35);
+    background: rgba(249, 115, 22, 0.12);
+    color: #fb923c;
+  }
+
+  .dark .tier-grandmaster {
+    border-color: rgba(244, 63, 94, 0.35);
+    background: rgba(244, 63, 94, 0.12);
+    color: #fb7185;
+  }
+
+  .dark .tier-international-grandmaster {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+  }
+
+  .dark .tier-legendary-grandmaster {
+    color: #ffffff;
   }
 }
 

@@ -92,7 +92,7 @@ export default async function ProblemDetailPage({
           <h1 className="mt-2.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             {meta.title}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm sm:text-base leading-relaxed text-muted">
+          <p className="mt-2 max-w-4xl text-sm sm:text-base leading-relaxed text-muted">
             {meta.summary}
           </p>
         </div>
@@ -104,8 +104,8 @@ export default async function ProblemDetailPage({
         </Link>
       </header>
 
-      {/* 两栏主体结构 */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_310px]">
+      {/* 两栏主体结构：在宽屏下左栏更开阔，右栏固定340px */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* 左侧主体内容 */}
         <div className="space-y-5">
           <section className="card p-5 sm:p-6">
