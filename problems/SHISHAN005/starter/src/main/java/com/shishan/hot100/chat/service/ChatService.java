@@ -30,6 +30,12 @@ public class ChatService {
     @Autowired
     private EventConsumer eventConsumer;
 
+    @Autowired
+    private ContentModerationService contentModerationService;
+
+    @Autowired
+    private MetricsService metricsService;
+
     public Message sendMessage(SendRequest request) {
         String clientMsgId = request.getClientMsgId();
         if (clientMsgId == null || clientMsgId.trim().isEmpty()) {
@@ -41,18 +47,21 @@ public class ChatService {
             return existing;
         }
 
+        String safeContent = contentModerationService.sanitize(request.getContent());
+
         Message message = new Message(
                 null,
                 clientMsgId,
                 request.getConversationId(),
                 request.getSenderId(),
-                request.getContent(),
+                safeContent,
                 sequenceGenerator.incrementAndGet(),
                 System.currentTimeMillis()
         );
 
         messageRepository.save(message);
         eventConsumer.consume(message);
+        metricsService.recordMessageSent();
         return message;
     }
 
@@ -62,6 +71,7 @@ public class ChatService {
             message.setAcked(true);
             message.setAckedAt(System.currentTimeMillis());
             messageRepository.registerAck(message.getClientMsgId(), message);
+            metricsService.recordAck();
             return true;
         }
         return false;
@@ -90,6 +100,7 @@ public class ChatService {
     public void reset() {
         messageRepository.clear();
         inboxRepository.clear();
+        metricsService.reset();
         sequenceGenerator.set(0);
     }
 }

@@ -5,10 +5,12 @@ import com.shishan.hot100.chat.model.ApiResponse;
 import com.shishan.hot100.chat.model.InboxResult;
 import com.shishan.hot100.chat.model.Message;
 import com.shishan.hot100.chat.model.PageResult;
+import com.shishan.hot100.chat.model.RecallRequest;
 import com.shishan.hot100.chat.model.SendRequest;
 import com.shishan.hot100.chat.model.TimelineResult;
 import com.shishan.hot100.chat.service.ChatService;
 import com.shishan.hot100.chat.service.CompensationWorker;
+import com.shishan.hot100.chat.service.MessageRecallService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,9 @@ public class ChatController {
 
     @Autowired
     private CompensationWorker compensationWorker;
+
+    @Autowired
+    private MessageRecallService messageRecallService;
 
     @PostMapping("/send")
     public ApiResponse<Message> sendMessage(@RequestBody SendRequest request) {
@@ -69,6 +74,12 @@ public class ChatController {
         String uid = userId != null ? userId : "u2";
         TimelineResult timeline = chatService.getTimeline(conversationId, uid);
         return ApiResponse.ok(timeline);
+    }
+
+    @PostMapping("/recall")
+    public ApiResponse<Map<String, Object>> recallMessage(@RequestBody RecallRequest request) {
+        boolean success = messageRecallService.recallMessage(request);
+        return ApiResponse.ok(Collections.singletonMap("recalled", success));
     }
 
     @PostMapping("/compensate")
