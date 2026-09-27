@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Repository
 public class MessageRepository {
     private final AtomicLong idGenerator = new AtomicLong(1000);
-    private final List<Message> messages = new CopyOnWriteArrayList<>();
+    private final List<Message> messages = new ArrayList<>();
     private final Map<String, Message> idempotencyCache = new ConcurrentHashMap<>();
 
     public Message findByClientMsgId(String clientMsgId) {
