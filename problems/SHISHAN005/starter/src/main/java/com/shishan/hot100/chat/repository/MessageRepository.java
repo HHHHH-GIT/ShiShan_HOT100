@@ -17,6 +17,7 @@ public class MessageRepository {
     private final AtomicLong idGenerator = new AtomicLong(1000);
     private final List<Message> messages = new CopyOnWriteArrayList<>();
     private final Map<String, Message> idempotencyCache = new ConcurrentHashMap<>();
+    private final Map<String, java.util.Set<Long>> conversationSequences = new ConcurrentHashMap<>();
 
     public Message findByClientMsgId(String clientMsgId) {
         if (clientMsgId == null) {
@@ -34,6 +35,12 @@ public class MessageRepository {
     public Message save(Message message) {
         if (message.getId() == null) {
             message.setId(idGenerator.incrementAndGet());
+        }
+        if (message.getConversationId() != null && message.getSequence() > 0) {
+            java.util.Set<Long> seqs = conversationSequences.computeIfAbsent(message.getConversationId(), k -> ConcurrentHashMap.newKeySet());
+            if (!seqs.add(message.getSequence())) {
+                throw new IllegalStateException("Sequence conflict: sequence " + message.getSequence() + " already exists in conversation " + message.getConversationId());
+            }
         }
         messages.add(message);
         return message;
@@ -103,6 +110,7 @@ public class MessageRepository {
     public void clear() {
         messages.clear();
         idempotencyCache.clear();
+        conversationSequences.clear();
         idGenerator.set(1000);
     }
 }

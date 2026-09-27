@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ChatService {
-    private final AtomicLong sequenceGenerator = new AtomicLong(0);
+    private long lastSequence = 0;
 
     @Autowired
     private MessageRepository messageRepository;
@@ -55,13 +55,19 @@ public class ChatService {
 
         String safeContent = contentModerationService.sanitize(request.getContent());
 
+        long currentSeq = lastSequence;
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException ignored) {}
+        lastSequence = currentSeq + 1;
+
         Message message = new Message(
                 null,
                 clientMsgId,
                 request.getConversationId(),
                 request.getSenderId(),
                 safeContent,
-                sequenceGenerator.incrementAndGet(),
+                lastSequence,
                 System.currentTimeMillis()
         );
 
@@ -107,7 +113,7 @@ public class ChatService {
         messageRepository.clear();
         inboxRepository.clear();
         metricsService.reset();
-        sequenceGenerator.set(0);
+        lastSequence = 0;
         if (authService != null) {
             authService.clearTokens();
         }
