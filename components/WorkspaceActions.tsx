@@ -22,6 +22,7 @@ export function WorkspaceActions({
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<"download" | "reset" | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const call = async (action: "download" | "reset") => {
     setBusy(action);
@@ -55,38 +56,83 @@ export function WorkspaceActions({
     }
   };
 
+  const copyText = (text: string, type: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
   const disabled = busy !== null || pending;
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        <button className="btn btn-primary" onClick={() => call("download")} disabled={disabled}>
-          {busy === "download" ? "处理中…" : downloaded ? "已下载" : "下载题目"}
+      {/* 按钮操作组 */}
+      <div className="flex gap-2">
+        <button
+          className="btn btn-primary flex-1 py-2 text-xs font-semibold shadow-xs"
+          onClick={() => call("download")}
+          disabled={disabled}
+        >
+          {busy === "download" ? "下发中…" : downloaded ? "已就绪 (可重下)" : "下发工程到本地"}
         </button>
-        <button className="btn" onClick={() => call("reset")} disabled={disabled}>
-          {busy === "reset" ? "重置中…" : "重置题目"}
+        <button
+          className="btn py-2 text-xs font-medium"
+          onClick={() => call("reset")}
+          disabled={disabled}
+        >
+          {busy === "reset" ? "重置中…" : "重置工作区"}
         </button>
       </div>
 
       {feedback && (
-        <p
+        <div
           className={`animate-fade-up rounded-lg border px-3 py-2 text-xs leading-relaxed ${
             feedback.tone === "ok"
-              ? "border-ok/40 bg-ok-soft text-ok"
+              ? "border-ok/30 bg-ok-soft/70 text-ok font-medium"
               : feedback.tone === "warn"
-                ? "border-warn/40 bg-warn-soft text-warn"
-                : "border-bad/40 bg-bad-soft text-bad"
+                ? "border-warn/30 bg-warn-soft/70 text-warn font-medium"
+                : "border-bad/30 bg-bad-soft/70 text-bad font-medium"
           }`}
         >
           {feedback.text}
-        </p>
+        </div>
       )}
 
-      <div className="rounded-lg border border-line bg-paper-2 px-3 py-2.5">
-        <p className="text-[11px] uppercase tracking-wider text-muted">本地路径</p>
-        <p className="mt-0.5 font-mono text-xs text-ink-soft">{workspacePath}</p>
-        <p className="mt-2 text-[11px] uppercase tracking-wider text-muted">启动命令</p>
-        <p className="mt-0.5 font-mono text-xs text-ink-soft">{startCommand || "—"}</p>
+      {/* 工作区路径与启动命令展示卡 */}
+      <div className="rounded-lg border border-line bg-paper p-3 text-xs space-y-2.5">
+        <div>
+          <div className="flex items-center justify-between text-muted text-[10px] font-semibold uppercase tracking-wider">
+            <span>工作区路径</span>
+            <button
+              type="button"
+              onClick={() => copyText(workspacePath, "path")}
+              className="hover:text-ink cursor-pointer transition-colors"
+            >
+              {copied === "path" ? "已复制" : "复制"}
+            </button>
+          </div>
+          <p className="mt-0.5 font-mono text-[11px] text-ink font-medium select-all break-all">
+            {workspacePath}
+          </p>
+        </div>
+
+        <div className="border-t border-line/60 pt-2">
+          <div className="flex items-center justify-between text-muted text-[10px] font-semibold uppercase tracking-wider">
+            <span>启动命令</span>
+            {startCommand && (
+              <button
+                type="button"
+                onClick={() => copyText(startCommand, "cmd")}
+                className="hover:text-ink cursor-pointer transition-colors"
+              >
+                {copied === "cmd" ? "已复制" : "复制"}
+              </button>
+            )}
+          </div>
+          <p className="mt-0.5 font-mono text-[11px] text-ink font-semibold select-all">
+            $ {startCommand || "—"}
+          </p>
+        </div>
       </div>
     </div>
   );

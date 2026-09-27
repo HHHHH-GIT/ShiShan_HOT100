@@ -20,7 +20,7 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
       nodes.push(
         <code
           key={`${keyPrefix}-c${index}`}
-          className="rounded border border-line bg-paper-2 px-1 py-0.5 font-mono text-[0.82em] text-ink-soft"
+          className="rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-[0.8em] text-ink font-medium"
         >
           {token.slice(1, -1)}
         </code>,
@@ -80,21 +80,27 @@ export function Markdown({ source }: { source: string }) {
       }
       index += 1;
       blocks.push(
-        <pre
-          key={key++}
-          className="log-scroll overflow-x-auto rounded-xl border border-line bg-[#26241f] px-4 py-3 text-[12.5px] leading-relaxed text-[#e8e3d8]"
-        >
-          <code className="font-mono" data-lang={lang || undefined}>
-            {body.join("\n")}
-          </code>
-        </pre>,
+        <div key={key++} className="overflow-hidden rounded-xl border border-neutral-800 bg-[#18181b] shadow-xs my-2">
+          {lang && (
+            <div className="flex items-center justify-between border-b border-neutral-800/80 px-3.5 py-1.5 bg-[#1f1f23]">
+              <span className="font-mono text-[10px] uppercase text-neutral-400 font-medium tracking-wider">
+                {lang}
+              </span>
+            </div>
+          )}
+          <pre className="log-scroll overflow-x-auto p-3.5 text-[12px] leading-relaxed text-neutral-200">
+            <code className="font-mono" data-lang={lang || undefined}>
+              {body.join("\n")}
+            </code>
+          </pre>
+        </div>,
       );
       continue;
     }
 
     // 分隔线
     if (/^\s*---+\s*$/.test(line)) {
-      blocks.push(<div key={key++} className="rule my-5" />);
+      blocks.push(<div key={key++} className="rule my-4" />);
       continue;
     }
 
@@ -105,12 +111,12 @@ export function Markdown({ source }: { source: string }) {
       const text = heading[2];
       const cls =
         level <= 2
-          ? "font-serif text-xl text-ink mt-1"
-          : "font-serif text-base text-ink-soft mt-1";
+          ? "text-base font-semibold text-ink mt-3 tracking-tight"
+          : "text-sm font-semibold text-ink-soft mt-2";
       blocks.push(
-        <p key={key++} className={cls}>
+        <h3 key={key++} className={cls}>
           {renderInline(text, `h${key}`)}
-        </p>,
+        </h3>,
       );
       index += 1;
       continue;
@@ -126,27 +132,27 @@ export function Markdown({ source }: { source: string }) {
         index += 1;
       }
       blocks.push(
-        <div key={key++} className="overflow-x-auto rounded-xl border border-line">
-          <table className="w-full border-collapse text-sm">
+        <div key={key++} className="overflow-x-auto rounded-xl border border-line bg-surface my-2">
+          <table className="w-full border-collapse text-xs">
             <thead>
-              <tr className="bg-paper-2">
+              <tr className="border-b border-line bg-paper text-muted">
                 {header.map((cell, cellIndex) => (
                   <th
                     key={cellIndex}
-                    className="border-b border-line px-3 py-2 text-left font-medium text-ink-soft"
+                    className="px-3.5 py-2.5 text-left font-semibold text-ink-soft"
                   >
                     {renderInline(cell, `th${cellIndex}`)}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-line/60">
               {rows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="odd:bg-white even:bg-paper/60">
+                <tr key={rowIndex} className="transition-colors hover:bg-paper/50">
                   {row.map((cell, cellIndex) => (
                     <td
                       key={cellIndex}
-                      className="border-b border-line/70 px-3 py-2 align-top text-ink-soft"
+                      className="px-3.5 py-2.5 align-top text-ink-soft"
                     >
                       {renderInline(cell, `td${rowIndex}-${cellIndex}`)}
                     </td>
@@ -160,7 +166,7 @@ export function Markdown({ source }: { source: string }) {
       continue;
     }
 
-    // 引用
+    // 引用（工单体，LeetCode / Apple 极简卡片式 Callout）
     if (line.trim().startsWith(">")) {
       const body: string[] = [];
       while (index < lines.length && lines[index].trim().startsWith(">")) {
@@ -170,7 +176,7 @@ export function Markdown({ source }: { source: string }) {
       blocks.push(
         <blockquote
           key={key++}
-          className="border-l-2 border-accent/60 bg-accent-soft/40 px-4 py-2 text-sm text-ink-soft"
+          className="rounded-r-lg border-l-3 border-ink/40 bg-paper px-4 py-2.5 text-xs leading-relaxed text-ink-soft my-2"
         >
           {body.map((item, itemIndex) => (
             <p key={itemIndex}>{renderInline(item, `bq${key}-${itemIndex}`)}</p>
@@ -192,7 +198,7 @@ export function Markdown({ source }: { source: string }) {
       blocks.push(
         <Tag
           key={key++}
-          className={`space-y-1 pl-5 text-sm leading-relaxed text-ink-soft ${
+          className={`space-y-1 pl-5 text-xs leading-relaxed text-ink-soft my-1.5 ${
             ordered ? "list-decimal" : "list-disc"
           }`}
         >
@@ -220,11 +226,11 @@ export function Markdown({ source }: { source: string }) {
       index += 1;
     }
     blocks.push(
-      <p key={key++} className="text-sm leading-relaxed text-ink-soft">
+      <p key={key++} className="text-xs leading-relaxed text-ink-soft">
         {renderInline(paragraph.join(" "), `p${key}`)}
       </p>,
     );
   }
 
-  return <div className="space-y-3">{blocks}</div>;
+  return <div className="space-y-2.5">{blocks}</div>;
 }

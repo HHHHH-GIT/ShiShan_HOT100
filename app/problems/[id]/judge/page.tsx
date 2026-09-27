@@ -23,17 +23,20 @@ export default async function JudgePage({
 
   return (
     <div className="space-y-4">
-      <nav className="flex items-center gap-2 text-xs text-muted">
+      {/* 极简面包屑 */}
+      <nav className="flex items-center gap-1.5 text-xs text-muted">
         <Link href="/" className="transition-colors hover:text-ink">
           题库
         </Link>
-        <span>/</span>
+        <span className="text-line-strong">/</span>
         <Link href={`/problems/${problem.id}`} className="transition-colors hover:text-ink">
           {problem.meta.title}
         </Link>
-        <span>/</span>
-        <span>回归测试</span>
-        <DifficultyBadge difficulty={problem.meta.difficulty} />
+        <span className="text-line-strong">/</span>
+        <span className="font-medium text-ink">本地回归评测</span>
+        <div className="ml-1">
+          <DifficultyBadge difficulty={problem.meta.difficulty} />
+        </div>
       </nav>
 
       <JudgeClient

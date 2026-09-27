@@ -16,20 +16,28 @@ export default async function HomePage() {
   return (
     <div className="space-y-4">
       {/* 极简题库顶部 */}
-      <div className="flex items-baseline justify-between border-b border-line pb-3">
-        <h1 className="font-serif text-2xl font-bold tracking-tight text-ink">
-          题库
-        </h1>
-        <span className="text-xs text-muted font-mono">
-          本地回归评测
-        </span>
+      <div className="flex items-center justify-between border-b border-line/80 pb-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-ink">
+            题库列表
+          </h1>
+          <p className="mt-0.5 text-xs text-muted">
+            真实线上排障工单 · 本地回归评测
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[11px] text-muted shadow-2xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-ok" />
+            本地回环就绪
+          </span>
+        </div>
       </div>
 
       {/* 题库列表主体 */}
       <section>
         {loadError ? (
-          <div className="card border-bad/40 bg-bad-soft p-5">
-            <p className="text-sm font-medium text-bad">题库加载失败</p>
+          <div className="card border-bad/30 bg-bad-soft/60 p-5">
+            <p className="text-sm font-semibold text-bad">题库加载失败</p>
             <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-bad/90">
               {loadError}
             </pre>

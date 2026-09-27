@@ -17,10 +17,10 @@ const TYPE_LABEL: Record<TestCase["type"], string> = {
 };
 
 const TYPE_CLASS: Record<TestCase["type"], string> = {
-  http: "border-line-strong bg-paper-2 text-muted",
-  workflow: "border-line-strong bg-paper-2 text-muted",
-  load: "border-accent/40 bg-accent-soft text-accent",
-  log: "border-line-strong bg-paper-2 text-muted",
+  http: "border-line bg-paper text-muted",
+  workflow: "border-line bg-paper text-muted",
+  load: "border-warn/40 bg-warn-soft text-warn font-medium",
+  log: "border-line bg-paper text-muted",
 };
 
 function testSummary(test: TestCase): string {
@@ -67,78 +67,89 @@ export default async function ProblemDetailPage({
 
   return (
     <div className="space-y-6">
-      <nav className="text-xs text-muted">
+      {/* 极简面包屑导航 */}
+      <nav className="flex items-center gap-1.5 text-xs text-muted">
         <Link href="/" className="transition-colors hover:text-ink">
           题库
         </Link>
-        <span className="px-2">/</span>
-        <span className="font-mono">{meta.id}</span>
+        <span className="text-line-strong">/</span>
+        <span className="font-mono text-ink font-medium">{meta.id}</span>
       </nav>
 
-      <header className="animate-fade-up flex flex-wrap items-start justify-between gap-4">
+      {/* 题目头部信息 */}
+      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line/80 pb-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs font-semibold tracking-wider text-muted">
               {meta.id}
             </span>
             <DifficultyBadge difficulty={meta.difficulty} size="lg" />
             <span className="chip">{problem.testCount} 个测试点</span>
-            {problem.status === "ac" && (
-              <span className="chip border-ok/40 bg-ok-soft text-ok">已 AC</span>
+            {solved && (
+              <span className="chip border-ok/40 bg-ok-soft text-ok font-medium">已 AC</span>
             )}
           </div>
-          <h1 className="mt-2 font-serif text-2xl tracking-tight text-ink">{meta.title}</h1>
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">{meta.summary}</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            {meta.title}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-xs sm:text-sm leading-relaxed text-muted">
+            {meta.summary}
+          </p>
         </div>
-        <Link href={`/problems/${meta.id}/judge`} className="btn btn-accent shrink-0">
+        <Link
+          href={`/problems/${meta.id}/judge`}
+          className="btn btn-accent shrink-0 px-4 py-2 text-sm shadow-xs"
+        >
           开始判题 →
         </Link>
       </header>
 
-      <div className="rule" />
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_296px]">
-        <div className="space-y-6">
-          <section className="card animate-fade-up p-5">
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-serif text-base text-ink">题目描述</h2>
+      {/* 两栏主体结构 */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* 左侧主体内容 */}
+        <div className="space-y-5">
+          <section className="card p-5 sm:p-6">
+            <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-2 border-b border-line/80 pb-2.5">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">题目描述</h2>
               <span className="font-mono text-[11px] text-muted">
-                即工作区里的 {problem.readmeSource}
+                来源：{problem.readmeSource}
               </span>
             </div>
             <Markdown source={problem.readme} />
           </section>
 
-          <section className="card animate-fade-up p-5">
-            <h2 className="mb-3 font-serif text-base text-ink">需要通过的 API 与预期效果</h2>
+          <section className="card p-5 sm:p-6">
+            <div className="mb-3.5 border-b border-line/80 pb-2.5">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">API 契约与预期效果</h2>
+            </div>
             <Markdown source={meta.apiContract} />
           </section>
 
-          <section className="card animate-fade-up p-5">
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-serif text-base text-ink">
+          <section className="card p-5 sm:p-6">
+            <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-2 border-b border-line/80 pb-2.5">
+              <h2 className="text-sm font-semibold tracking-tight text-ink">
                 回归测试点
                 <span className="ml-2 text-xs font-normal text-muted">
                   全部通过即为 AC
                 </span>
               </h2>
               {!solved && (
-                <span className="chip border-warn/40 bg-warn-soft text-warn">
+                <span className="chip border-line bg-paper text-muted text-[11px]">
                   未解锁完整清单
                 </span>
               )}
             </div>
 
             {solved ? (
-              <ol className="space-y-3">
+              <ol className="divide-y divide-line/60">
                 {spec.tests.map((test, index) => (
-                  <li key={test.id} className="flex gap-3">
+                  <li key={test.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
                     <span className="mt-0.5 shrink-0 font-mono text-xs text-muted">
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-ink">
+                        <span className="text-xs font-semibold text-ink">
                           {test.displayName ?? test.name}
                         </span>
                         <span className={`chip ${TYPE_CLASS[test.type]}`}>
@@ -159,17 +170,17 @@ export default async function ProblemDetailPage({
               </ol>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-ink-soft">
-                  共 <span className="font-medium text-ink">{problem.testCount}</span> 个测试点：
+                <p className="text-xs text-ink-soft">
+                  共 <span className="font-semibold text-ink">{problem.testCount}</span> 个测试点：
                   {typeDistribution(spec.tests)
                     .map((item) => `${item.label} ×${item.count}`)
                     .join("、")}
                 </p>
-                <div className="rounded-lg border border-line bg-paper-2 px-3 py-2.5">
+                <div className="rounded-lg border border-line bg-paper px-3.5 py-2.5">
                   <p className="text-xs leading-relaxed text-muted">
-                    具体的用例名称与说明在
-                    <strong className="font-medium text-ink-soft">首次 AC 之后解锁</strong>
-                    —— 用例名里会提到要验的东西，提前看到基本等于提前拿到答案。
+                    具体的测试用例名称与断言说明在
+                    <strong className="font-semibold text-ink"> 首次 AC 之后解锁</strong>
+                    。用例名中包含验证指标，为保护排障探索体验，未通过前隐藏技术细节。
                   </p>
                 </div>
               </div>
@@ -183,9 +194,12 @@ export default async function ProblemDetailPage({
           />
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          <section className="card p-5">
-            <h2 className="mb-3 font-serif text-base text-ink">本地工作区</h2>
+        {/* 右侧悬浮侧边栏 */}
+        <aside className="space-y-4 lg:sticky lg:top-18 lg:self-start">
+          <section className="card p-4 sm:p-5">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+              本地工作区
+            </h2>
             <WorkspaceActions
               problemId={meta.id}
               workspacePath={problem.workspacePath}
@@ -194,45 +208,55 @@ export default async function ProblemDetailPage({
             />
           </section>
 
-          <section className="card p-5">
-            <h2 className="mb-3 font-serif text-base text-ink">题解</h2>
+          <section className="card p-4 sm:p-5">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              参考题解
+            </h2>
             {problem.hasSolution ? (
               <>
-                <a className="btn w-full" href={`/api/problems/${meta.id}/solution`} download>
-                  下载题解（.md）
+                <a
+                  className="btn w-full justify-center text-xs font-medium"
+                  href={`/api/problems/${meta.id}/solution`}
+                  download
+                >
+                  下载题解 (.md)
                 </a>
-                <p className="mt-3 text-[11px] leading-relaxed text-muted">
-                  题解不在页面里直接展示 —— 先自己动手，实在需要了再下载对照。
+                <p className="mt-2.5 text-[11px] leading-relaxed text-muted">
+                  题解不在页面中直接展示，建议在独立排查确实遇到阻碍后再下载对照。
                 </p>
               </>
             ) : (
-              <p className="text-xs text-muted">这道题还没有提供题解文件。</p>
+              <p className="text-xs text-muted">该题目暂未提供独立题解附件。</p>
             )}
           </section>
 
-          <section className="card p-5">
-            <h2 className="mb-3 font-serif text-base text-ink">心跳约定</h2>
+          <section className="card p-4 sm:p-5">
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+              服务探活约定
+            </h2>
             <dl className="space-y-2 text-xs">
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-muted">端口</dt>
-                <dd className="font-mono text-ink-soft">{meta.heartbeat.port}</dd>
+                <dt className="text-muted">监听端口</dt>
+                <dd className="font-mono font-medium text-ink">{meta.heartbeat.port}</dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-muted">接口</dt>
-                <dd className="font-mono text-ink-soft">{meta.heartbeat.path}</dd>
+                <dt className="text-muted">心跳路径</dt>
+                <dd className="font-mono font-medium text-ink">{meta.heartbeat.path}</dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-muted">日志</dt>
-                <dd className="font-mono text-ink-soft">{meta.logPath}</dd>
+                <dt className="text-muted">日志文件</dt>
+                <dd className="font-mono text-muted">{meta.logPath}</dd>
               </div>
             </dl>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted">
-              判题前会先探活。探不通说明服务没起来，会直接终止并提示你先启动服务。
+            <p className="mt-3 text-[11px] leading-relaxed text-muted border-t border-line/70 pt-2.5">
+              判题开始前会自动发起 HTTP 探活。探活不通将直接终止并提示启动本地服务。
             </p>
           </section>
 
-          <section className="card p-5">
-            <h2 className="mb-3 font-serif text-base text-ink">标签</h2>
+          <section className="card p-4 sm:p-5">
+            <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted">
+              核心标签
+            </h2>
             <div className="flex flex-wrap gap-1.5">
               {meta.tags.map((tag) => (
                 <span key={tag} className="chip">

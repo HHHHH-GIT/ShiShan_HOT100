@@ -1,32 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #faf9f5;
-  --color-paper-2: #f4f2ec;
+  --color-paper: #f8f9fa;
+  --color-paper-2: #f1f3f5;
   --color-surface: #ffffff;
-  --color-line: #e8e4da;
-  --color-line-strong: #d5d0c2;
-  --color-ink: #1f1e1c;
-  --color-ink-soft: #3d3b37;
-  --color-muted: #6f6b63;
-  --color-accent: #c96442;
-  --color-accent-soft: #f5e8e2;
-  --color-ok: #4a7c59;
-  --color-ok-soft: #e7efe8;
-  --color-bad: #b0413e;
-  --color-bad-soft: #f7e8e6;
-  --color-warn: #a67c1a;
-  --color-warn-soft: #f7efdc;
+  --color-line: #e5e7eb;
+  --color-line-strong: #d1d5db;
+  --color-ink: #111827;
+  --color-ink-soft: #374151;
+  --color-muted: #6b7280;
+  --color-accent: #ffa116;
+  --color-accent-soft: #fff7ed;
+  --color-ok: #00af9b;
+  --color-ok-soft: #e6f8f5;
+  --color-bad: #ef4444;
+  --color-bad-soft: #fef2f2;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fffbeb;
 
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Songti SC", "Noto Serif SC", Georgia, serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --shadow-card: 0 1px 2px rgba(31, 30, 28, 0.04), 0 10px 28px -14px rgba(31, 30, 28, 0.12);
-  --shadow-lift: 0 2px 4px rgba(31, 30, 28, 0.05), 0 16px 32px -16px rgba(31, 30, 28, 0.18);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lift: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
 }
 
-/* ---------- 基础层：可被 Tailwind 工具类覆盖 ---------- */
+/* ---------- 基础层 ---------- */
 
 @layer base {
   html,
@@ -35,31 +34,32 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
 
   body {
-    background-image: radial-gradient(rgba(31, 30, 28, 0.025) 1px, transparent 0);
-    background-size: 22px 22px;
+    background-image: none;
   }
 }
 
-/* ---------- 组件层：Tailwind 工具类优先级高于这里 ---------- */
+/* ---------- 组件层 ---------- */
 
 @layer components {
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-line);
-    border-radius: 14px;
+    border-radius: 12px;
     box-shadow: var(--shadow-card);
   }
 
   .card-hover {
-    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease,
-      border-color 180ms ease;
+    transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms ease,
+      border-color 160ms ease;
   }
 
   .card-hover:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1.5px);
     box-shadow: var(--shadow-lift);
     border-color: var(--color-line-strong);
   }
@@ -69,167 +69,177 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    border-radius: 10px;
-    border: 1px solid var(--color-line-strong);
+    border-radius: 8px;
+    border: 1px solid var(--color-line);
     background: var(--color-surface);
-    color: var(--color-ink);
-    padding: 0.5rem 0.95rem;
-    font-size: 0.875rem;
+    color: var(--color-ink-soft);
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
     line-height: 1.25rem;
-    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    transition: all 140ms ease;
     cursor: pointer;
+    user-select: none;
   }
 
   .btn:hover:not(:disabled) {
-    background: var(--color-paper-2);
-    border-color: var(--color-muted);
+    background: var(--color-paper);
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+  }
+
+  .btn:active:not(:disabled) {
+    transform: scale(0.985);
   }
 
   .btn:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
   .btn-primary {
-    background: var(--color-ink);
-    border-color: var(--color-ink);
-    color: #fbfaf7;
+    background: #111827;
+    border-color: #111827;
+    color: #ffffff;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: var(--color-ink-soft);
-    border-color: var(--color-ink-soft);
+    background: #1f2937;
+    border-color: #1f2937;
+    color: #ffffff;
   }
 
   .btn-accent {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: #fff;
+    color: #ffffff;
+    font-weight: 600;
   }
 
   .btn-accent:hover:not(:disabled) {
-    background: #b85838;
-    border-color: #b85838;
+    background: #f29300;
+    border-color: #f29300;
+    color: #ffffff;
   }
 
   .chip {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    border-radius: 999px;
+    border-radius: 6px;
     border: 1px solid var(--color-line);
-    background: var(--color-paper-2);
+    background: var(--color-paper);
     color: var(--color-muted);
-    padding: 0.14rem 0.55rem;
-    font-size: 0.7rem;
-    letter-spacing: 0.02em;
+    padding: 0.12rem 0.5rem;
+    font-size: 0.725rem;
+    font-weight: 500;
+    line-height: 1.15rem;
   }
 
   .rule {
     height: 1px;
-    background: linear-gradient(to right, var(--color-line), transparent);
+    background: var(--color-line);
   }
 
   .animate-shake {
-    animation: shake 620ms cubic-bezier(0.36, 0.07, 0.19, 0.97) 1;
+    animation: shake 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97) 1;
   }
 
   .animate-pop-in {
-    animation: pop-in 460ms cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+    animation: pop-in 360ms cubic-bezier(0.16, 1, 0.3, 1) 1 both;
   }
 
   .animate-fade-up {
-    animation: fade-up 240ms ease-out 1 both;
+    animation: fade-up 200ms ease-out 1 both;
   }
 
   .animate-pulse-ring {
-    animation: pulse-ring 1.6s ease-out infinite;
+    animation: pulse-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
   }
 
   .progress-sweep {
     background-image: linear-gradient(
       90deg,
       var(--color-accent) 0%,
-      #e0916f 40%,
+      #ffc069 40%,
       var(--color-accent) 60%,
       var(--color-accent) 100%
     );
     background-size: 200% 100%;
-    animation: sweep 2.2s linear infinite;
+    animation: sweep 1.8s linear infinite;
   }
 
-  /* ---------- 难度段位徽标（由易到难） ---------- */
+  /* ---------- 难度段位徽标（LeetCode / Codeforces 风格极简徽标） ---------- */
 
   .tier-newbie {
-    border-color: #d5d0c2;
-    background: #f4f2ec;
-    color: #6f6b63;
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
   }
 
   .tier-pupil {
-    border-color: #a9c6b1;
-    background: #e8f0e9;
-    color: #3d6b4a;
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #16a34a;
   }
 
   .tier-specialist {
-    border-color: #9dc4c8;
-    background: #e2eff0;
-    color: #2c666d;
+    border-color: #99f6e4;
+    background: #f0fdfa;
+    color: #0d9488;
   }
 
   .tier-expert {
-    border-color: #a5c0da;
-    background: #e6edf5;
-    color: #2c5a86;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #2563eb;
   }
 
   .tier-candidate-master {
-    border-color: #c3aed6;
-    background: #efe8f4;
-    color: #67457f;
+    border-color: #e9d5ff;
+    background: #faf5ff;
+    color: #9333ea;
   }
 
   .tier-master {
-    border-color: #e0b98c;
-    background: #faecdd;
-    color: #9d5f1e;
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #d97706;
   }
 
   .tier-international-master {
-    border-color: #d9a978;
-    background: #f7e3d0;
-    color: #8f4c14;
+    border-color: #fed7aa;
+    background: #fff7ed;
+    color: #ea580c;
   }
 
   .tier-grandmaster {
-    border-color: #d9a29c;
-    background: #f8e5e3;
-    color: #a1392f;
+    border-color: #fecdd3;
+    background: #fff1f2;
+    color: #e11d48;
   }
 
   .tier-international-grandmaster {
-    border-color: #ce8981;
-    background: #f3dad7;
-    color: #8b2a20;
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #dc2626;
   }
 
   .tier-legendary-grandmaster {
     border-color: transparent;
-    color: #2a2723;
+    color: #18181b;
     background-image: linear-gradient(
       90deg,
-      #e8695c,
-      #e0a13c,
-      #cfc247,
-      #6bab6f,
-      #4a8fb0,
-      #8a6bb0,
-      #e8695c
+      #f43f5e,
+      #f59e0b,
+      #10b981,
+      #06b6d4,
+      #8b5cf6,
+      #f43f5e
     );
     background-size: 300% 100%;
     animation: rainbow-shift 3.6s linear infinite;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    font-weight: 600;
   }
 }
 
@@ -237,27 +247,26 @@
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  15% { transform: translateX(-7px) rotate(-0.4deg); }
-  30% { transform: translateX(6px) rotate(0.4deg); }
-  45% { transform: translateX(-5px); }
-  60% { transform: translateX(4px); }
-  75% { transform: translateX(-2px); }
+  15% { transform: translateX(-5px); }
+  30% { transform: translateX(5px); }
+  45% { transform: translateX(-4px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
 }
 
 @keyframes pop-in {
-  0% { opacity: 0; transform: scale(0.86) translateY(8px); }
-  60% { opacity: 1; transform: scale(1.04) translateY(0); }
+  0% { opacity: 0; transform: scale(0.92) translateY(4px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(74, 124, 89, 0.35); }
-  100% { box-shadow: 0 0 0 10px rgba(74, 124, 89, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(0, 175, 155, 0.4); }
+  100% { box-shadow: 0 0 0 8px rgba(0, 175, 155, 0); }
 }
 
 @keyframes sweep {
@@ -281,14 +290,17 @@
   }
 }
 
-/* 日志区滚动条 */
+/* 日志区与代码区滚动条（极简浅色/深色透明滑块） */
 .log-scroll::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 .log-scroll::-webkit-scrollbar-thumb {
-  background: #d9d4c8;
+  background: rgba(156, 163, 175, 0.4);
   border-radius: 999px;
+}
+.log-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
 }
 .log-scroll::-webkit-scrollbar-track {
   background: transparent;
