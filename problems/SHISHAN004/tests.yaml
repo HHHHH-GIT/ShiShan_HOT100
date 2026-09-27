@@ -1,0 +1,134 @@
+version: 1
+baseUrl: "http://127.0.0.1:18083"
+
+tests:
+  - id: heartbeat
+    type: http
+    name: 心跳探活
+    displayName: 服务就绪检查
+    description: 服务必须已在 18083 端口就绪，返回 {"status":"ok"}
+    request:
+      method: GET
+      url: "${baseUrl}/hello"
+      timeoutMs: 3000
+    expect:
+      status: 200
+      json:
+        status: ok
+      maxMs: 1000
+
+  - id: upload-single-file
+    type: workflow
+    name: 单文件上传基础链路
+    displayName: 单文件上传基础链路
+    description: 上传普通文件，服务端正确接收并返回资源访问路径
+    steps:
+      - id: upload-txt
+        name: 上传测试文档
+        request:
+          method: POST
+          url: "${baseUrl}/api/upload"
+          json:
+            filename: "welcome.txt"
+            content: "U2hpc2hhbiBIb3QxMDAgV2VsY29tZQ=="
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              filename: "welcome.txt"
+              url: "/api/files/welcome.txt"
+
+  - id: fetch-uploaded-file-immediately
+    type: workflow
+    name: 上传后立即访问有效性
+    displayName: 附件即时可用性验证
+    description: 上传文件后立即发起获取请求，服务端必须即刻能提供该文件访问，不得返回 404
+    steps:
+      - id: upload-img
+        name: 上传图片附件
+        request:
+          method: POST
+          url: "${baseUrl}/api/upload"
+          json:
+            filename: "avatar.png"
+            content: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: fetch-img
+        name: 立即获取该图片
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/avatar.png"
+        expect:
+          status: 200
+          contains:
+            - "PNG"
+
+  - id: upload-and-read-multiple-files
+    type: workflow
+    name: 多文件连续上传与独立读取
+    displayName: 多附件独立存储与读取
+    description: 连续上传多份不同文件，每个文件均能独立且内容准确地被读取下载
+    steps:
+      - id: upload-doc1
+        name: 上传第一份文档
+        request:
+          method: POST
+          url: "${baseUrl}/api/upload"
+          json:
+            filename: "doc1.txt"
+            content: "SGVsbG8gZnJvbSBEb2MgMQ=="
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: upload-doc2
+        name: 上传第二份文档
+        request:
+          method: POST
+          url: "${baseUrl}/api/upload"
+          json:
+            filename: "doc2.txt"
+            content: "SGVsbG8gZnJvbSBEb2MgMg=="
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: fetch-doc1
+        name: 读取第一份文档
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/doc1.txt"
+        expect:
+          status: 200
+          contains:
+            - "Hello from Doc 1"
+
+      - id: fetch-doc2
+        name: 读取第二份文档
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/doc2.txt"
+        expect:
+          status: 200
+          contains:
+            - "Hello from Doc 2"
+
+  - id: non-existent-file-404
+    type: http
+    name: 不存在文件的异常保护
+    displayName: 异常文件检索保护
+    description: 请求未上传的文件，返回规范的 404 状态与结构化信息，服务不应崩溃
+    request:
+      method: GET
+      url: "${baseUrl}/api/files/never-uploaded-file.txt"
+    expect:
+      status: 404
+      json:
+        code: 404

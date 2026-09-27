@@ -105,9 +105,11 @@ const targets = [
   path.join(process.cwd(), "problems", "SHISHAN001"),
   path.join(process.cwd(), "problems", "SHISHAN002"),
   path.join(process.cwd(), "problems", "SHISHAN003"),
+  path.join(process.cwd(), "problems", "SHISHAN004"),
   path.join(process.cwd(), "workspace", "SHISHAN001"),
   path.join(process.cwd(), "workspace", "SHISHAN002"),
   path.join(process.cwd(), "workspace", "SHISHAN003"),
+  path.join(process.cwd(), "workspace", "SHISHAN004"),
 ];
 
 for (const target of targets) {

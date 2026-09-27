@@ -1,0 +1,15 @@
+{
+  "id": "SHISHAN004",
+  "title": "时空错位的文件服务",
+  "difficulty": "pupil",
+  "tags": ["文件存储", "路径映射", "运行环境"],
+  "summary": "文件上传成功，但立刻访问却提示 404；重启服务或重新构建后，文件又神奇出现了。",
+  "apiContract": "端口固定为 `18083`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 | 预期的正常响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/upload` | POST | `{\"filename\":\"demo.txt\",\"content\":\"<base64>\"}` | `200` + `code=0`，`data.url=\"/api/files/demo.txt\"` |\n| `/api/files/{filename}` | GET | - | `200` + 原始文件字节流 |\n\n约定：\n\n- 上传入参中 `content` 为附件内容的 Base64 编码字符串。\n- 文件获取接口在文件存在时返回 HTTP 200 及对应字节流；若文件不存在则返回 **HTTP 404** + `{\"code\":404,\"msg\":\"file not found\"}`。\n- 上传成功后，该文件必须能够被立即访问下载，不依赖任何构建命令或服务重启行为。",
+  "heartbeat": {
+    "port": 18083,
+    "path": "/hello"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN004.zip",
+  "startCommand": "mvn spring-boot:run"
+}
