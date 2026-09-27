@@ -56,21 +56,21 @@ export function HintsPanel({ problemId, levels, solved }: Props) {
   if (levels.length === 0) return null;
 
   return (
-    <details className="card p-5 group" open={false}>
-      <summary className="cursor-pointer select-none text-sm font-semibold text-ink flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <details className="card p-5 sm:p-6 group" open={false}>
+      <summary className="cursor-pointer select-none text-base font-bold text-ink flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
           <span>梯度线索提示</span>
-          <span className="text-xs font-normal text-muted">
+          <span className="text-xs sm:text-sm font-normal text-muted">
             （{levels.length} 级线索，逐级展开）
           </span>
         </div>
-        <span className="text-xs text-muted group-open:rotate-180 transition-transform duration-200">
+        <span className="text-sm text-muted group-open:rotate-180 transition-transform duration-200">
           ▼
         </span>
       </summary>
 
-      <div className="mt-4 space-y-3 border-t border-line/80 pt-4">
-        <p className="text-xs leading-relaxed text-muted">
+      <div className="mt-4 space-y-3.5 border-t border-line/80 pt-4">
+        <p className="text-sm leading-relaxed text-muted">
           建议先尝试独立调试。确实遇到阻碍时可逐步展开提示。已使用的最高提示级别将记录在判题结果中。
         </p>
 
@@ -82,13 +82,13 @@ export function HintsPanel({ problemId, levels, solved }: Props) {
             return (
               <div
                 key={item.level}
-                className="rounded-lg border border-dashed border-line bg-paper/60 px-3.5 py-2.5"
+                className="rounded-lg border border-dashed border-line bg-paper/60 px-4 py-3"
               >
-                <p className="text-xs text-muted flex items-center justify-between">
+                <p className="text-sm text-muted flex items-center justify-between">
                   <span>
                     L{item.level} · {item.title ? item.title : (LEVEL_LABEL[item.level] ?? "进阶提示")}
                   </span>
-                  <span className="text-[11px] text-muted/80">需先展开上一级提示</span>
+                  <span className="text-xs text-muted/80">需先展开上一级提示</span>
                 </p>
               </div>
             );
@@ -97,28 +97,28 @@ export function HintsPanel({ problemId, levels, solved }: Props) {
           return (
             <details
               key={item.level}
-              className="rounded-lg border border-line bg-paper/50 px-3.5 py-2.5 transition-colors group/item"
+              className="rounded-lg border border-line bg-paper/50 px-4 py-3 transition-colors group/item"
               open={false}
               onToggle={(event) => {
                 if ((event.currentTarget as HTMLDetailsElement).open) unlock(item.level);
               }}
             >
-              <summary className="cursor-pointer select-none text-xs font-medium text-ink flex items-center justify-between">
+              <summary className="cursor-pointer select-none text-sm font-semibold text-ink flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span>
                     L{item.level} · {item.title ? item.title : (LEVEL_LABEL[item.level] ?? "提示内容")}
                   </span>
                   {item.level <= unlocked && (
-                    <span className="rounded bg-warn-soft border border-warn/30 px-1.5 py-0.2 text-[10px] text-warn font-medium">
+                    <span className="rounded bg-warn-soft border border-warn/30 px-2 py-0.5 text-xs text-warn font-semibold">
                       已开启
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-muted group-open/item:rotate-180 transition-transform duration-200">
+                <span className="text-xs text-muted group-open/item:rotate-180 transition-transform duration-200">
                   ▼
                 </span>
               </summary>
-              <div className="mt-2.5 border-t border-line/70 pt-2.5 text-xs">
+              <div className="mt-3 border-t border-line/70 pt-3">
                 <Markdown source={item.body} />
               </div>
             </details>
@@ -126,7 +126,7 @@ export function HintsPanel({ problemId, levels, solved }: Props) {
         })}
 
         {unlocked > 0 && !solved && (
-          <p className="text-[11px] leading-relaxed text-warn font-medium">
+          <p className="text-xs sm:text-sm leading-relaxed text-warn font-semibold">
             当前已解锁至 L{Math.min(unlocked, levels.length)}，判题通过时将附带提示使用标记。
           </p>
         )}

@@ -65,18 +65,18 @@ export function WorkspaceActions({
   const disabled = busy !== null || pending;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {/* 按钮操作组 */}
-      <div className="flex gap-2">
+      <div className="flex gap-2.5">
         <button
-          className="btn btn-primary flex-1 py-2 text-xs font-semibold shadow-xs"
+          className="btn btn-primary flex-1 py-2.5 text-sm font-semibold shadow-xs"
           onClick={() => call("download")}
           disabled={disabled}
         >
           {busy === "download" ? "下发中…" : downloaded ? "已就绪 (可重下)" : "下发工程到本地"}
         </button>
         <button
-          className="btn py-2 text-xs font-medium"
+          className="btn py-2.5 text-sm font-medium"
           onClick={() => call("reset")}
           disabled={disabled}
         >
@@ -86,12 +86,12 @@ export function WorkspaceActions({
 
       {feedback && (
         <div
-          className={`animate-fade-up rounded-lg border px-3 py-2 text-xs leading-relaxed ${
+          className={`animate-fade-up rounded-lg border px-3.5 py-2.5 text-sm leading-relaxed ${
             feedback.tone === "ok"
-              ? "border-ok/30 bg-ok-soft/70 text-ok font-medium"
+              ? "border-ok/30 bg-ok-soft/70 text-ok font-semibold"
               : feedback.tone === "warn"
-                ? "border-warn/30 bg-warn-soft/70 text-warn font-medium"
-                : "border-bad/30 bg-bad-soft/70 text-bad font-medium"
+                ? "border-warn/30 bg-warn-soft/70 text-warn font-semibold"
+                : "border-bad/30 bg-bad-soft/70 text-bad font-semibold"
           }`}
         >
           {feedback.text}
@@ -99,37 +99,37 @@ export function WorkspaceActions({
       )}
 
       {/* 工作区路径与启动命令展示卡 */}
-      <div className="rounded-lg border border-line bg-paper p-3 text-xs space-y-2.5">
+      <div className="rounded-lg border border-line bg-paper p-3.5 text-sm space-y-3">
         <div>
-          <div className="flex items-center justify-between text-muted text-[10px] font-semibold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-muted text-xs font-bold uppercase tracking-wider">
             <span>工作区路径</span>
             <button
               type="button"
               onClick={() => copyText(workspacePath, "path")}
-              className="hover:text-ink cursor-pointer transition-colors"
+              className="hover:text-ink cursor-pointer transition-colors text-xs font-semibold"
             >
               {copied === "path" ? "已复制" : "复制"}
             </button>
           </div>
-          <p className="mt-0.5 font-mono text-[11px] text-ink font-medium select-all break-all">
+          <p className="mt-1 font-mono text-xs sm:text-[13px] text-ink font-medium select-all break-all leading-normal">
             {workspacePath}
           </p>
         </div>
 
-        <div className="border-t border-line/60 pt-2">
-          <div className="flex items-center justify-between text-muted text-[10px] font-semibold uppercase tracking-wider">
+        <div className="border-t border-line/60 pt-2.5">
+          <div className="flex items-center justify-between text-muted text-xs font-bold uppercase tracking-wider">
             <span>启动命令</span>
             {startCommand && (
               <button
                 type="button"
                 onClick={() => copyText(startCommand, "cmd")}
-                className="hover:text-ink cursor-pointer transition-colors"
+                className="hover:text-ink cursor-pointer transition-colors text-xs font-semibold"
               >
                 {copied === "cmd" ? "已复制" : "复制"}
               </button>
             )}
           </div>
-          <p className="mt-0.5 font-mono text-[11px] text-ink font-semibold select-all">
+          <p className="mt-1 font-mono text-xs sm:text-[13px] text-ink font-bold select-all leading-normal">
             $ {startCommand || "—"}
           </p>
         </div>

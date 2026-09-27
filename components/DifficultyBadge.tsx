@@ -12,12 +12,12 @@ export function DifficultyBadge({
   const tier = difficultyTier(difficulty);
   return (
     <span
-      className={`inline-flex items-center justify-center font-medium rounded-md border tracking-tight transition-colors ${
+      className={`inline-flex items-center justify-center font-semibold rounded-md border tracking-tight transition-colors ${
         tier.className
       } ${
         size === "lg"
-          ? "px-2.5 py-0.5 text-xs"
-          : "px-2 py-0.5 text-[11px] leading-tight"
+          ? "px-3 py-1 text-sm"
+          : "px-2.5 py-0.5 text-xs leading-normal"
       }`}
       title={`难度段位 ${tier.rank}/10 · ${tier.label}`}
     >

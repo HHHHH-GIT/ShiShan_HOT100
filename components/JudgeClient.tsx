@@ -32,14 +32,14 @@ const LEVEL_STYLE: Record<LogLevel, string> = {
   info: "text-neutral-300",
   debug: "text-neutral-500",
   success: "text-emerald-400 font-medium",
-  warn: "text-amber-400",
+  warn: "text-amber-400 font-medium",
   error: "text-rose-400 font-medium",
 };
 
 const VERDICT_STYLE: Record<string, { label: string; className: string }> = {
-  AC: { label: "AC", className: "border-ok/40 bg-ok-soft text-ok font-semibold" },
-  FAIL: { label: "FAIL", className: "border-bad/40 bg-bad-soft text-bad font-semibold" },
-  heartbeat_failed: { label: "未探活", className: "border-warn/40 bg-warn-soft text-warn font-semibold" },
+  AC: { label: "AC", className: "border-ok/40 bg-ok-soft text-ok font-bold text-xs" },
+  FAIL: { label: "FAIL", className: "border-bad/40 bg-bad-soft text-bad font-bold text-xs" },
+  heartbeat_failed: { label: "未探活", className: "border-warn/40 bg-warn-soft text-warn font-bold text-xs" },
 };
 
 const SEGMENT_STYLE: Record<TestResult["status"], string> = {
@@ -324,28 +324,28 @@ export function JudgeClient({
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-muted">
                 {problemId}
               </span>
-              <DifficultyBadge difficulty={difficulty} />
+              <DifficultyBadge difficulty={difficulty} size="sm" />
               {verdict && verdict !== "heartbeat_failed" && (
                 <span className={`chip ${VERDICT_STYLE[verdict].className}`}>
                   {VERDICT_STYLE[verdict].label}
                 </span>
               )}
             </div>
-            <h1 className="mt-2 text-xl sm:text-2xl font-bold tracking-tight text-ink">
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
               {problemTitle}
             </h1>
-            <p className="mt-1 max-w-2xl text-xs sm:text-sm leading-relaxed text-muted">
+            <p className="mt-1.5 max-w-2xl text-sm sm:text-base leading-relaxed text-muted">
               {problemSummary}
             </p>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]">
-              <span className="flex items-center gap-1.5">
+            <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm">
+              <span className="flex items-center gap-2">
                 <span
-                  className={`h-2 w-2 shrink-0 rounded-full transition-colors ${
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full transition-colors ${
                     heartbeat?.ok
                       ? "bg-ok animate-pulse-ring"
                       : heartbeat
@@ -355,7 +355,7 @@ export function JudgeClient({
                           : "bg-line-strong"
                   }`}
                 />
-                <span className="font-medium text-ink-soft">
+                <span className="font-semibold text-ink-soft">
                   {heartbeat?.ok
                     ? "服务心跳正常"
                     : heartbeat
@@ -365,7 +365,7 @@ export function JudgeClient({
                         : "等待开始判题"}
                 </span>
               </span>
-              <span className="font-mono text-muted/80">
+              <span className="font-mono text-xs text-muted">
                 GET http://127.0.0.1:{heartbeatPort}
                 {heartbeatPath}
                 {heartbeat ? ` · ${heartbeat.elapsedMs}ms` : ""}
@@ -373,11 +373,11 @@ export function JudgeClient({
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <Link href={`/problems/${problemId}`} className="btn">
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Link href={`/problems/${problemId}`} className="btn py-2 text-sm font-medium">
               题目详情
             </Link>
-            <button className="btn btn-accent px-4 py-2 font-semibold shadow-xs" onClick={start} disabled={running}>
+            <button className="btn btn-accent px-5 py-2 text-sm font-semibold shadow-xs" onClick={start} disabled={running}>
               {running ? "判题中…" : verdict ? "重新判题" : "开始判题"}
             </button>
           </div>
@@ -386,18 +386,18 @@ export function JudgeClient({
         {/* 结果说明 */}
         {verdict && verdict !== "heartbeat_failed" && (
           <div
-            className={`mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-line/80 pt-3 text-xs sm:text-sm ${
+            className={`mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5 border-t border-line/80 pt-3.5 text-sm sm:text-base ${
               verdict === "AC" ? "text-ok" : "text-bad"
             }`}
           >
-            <span className="font-medium">
+            <span className="font-bold">
               {verdict === "AC"
                 ? `🎉 全部 ${total} 个测试点全部通过，AC！`
                 : `✘ 未通过：${total - passedCount} 个测试点断言失败，请检查下方执行日志。`}
             </span>
             {verdict === "AC" && (
               <span
-                className={`text-[11px] font-mono ${
+                className={`text-xs font-mono font-medium ${
                   hintLevel > 0 ? "text-warn" : "text-muted"
                 }`}
               >
@@ -410,35 +410,35 @@ export function JudgeClient({
         {/* 心跳失败引导 */}
         {heartbeat && !heartbeat.ok && (
           <div className="animate-shake mt-4 rounded-xl border border-bad/30 bg-bad-soft/60 p-4">
-            <p className="text-sm font-semibold text-bad">本地服务未运行或无法连接</p>
-            <p className="mt-1 text-xs leading-relaxed text-bad/90">{heartbeat.detail}</p>
-            <div className="mt-2.5 space-y-1 rounded-lg border border-bad/20 bg-surface/80 px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-bad/80">
+            <p className="text-sm font-bold text-bad">本地服务未运行或无法连接</p>
+            <p className="mt-1 text-xs sm:text-sm leading-relaxed text-bad/90">{heartbeat.detail}</p>
+            <div className="mt-3 space-y-1 rounded-lg border border-bad/20 bg-surface/80 px-3.5 py-2.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-bad/80">
                 请先在本地终端执行启动命令
               </p>
-              <p className="font-mono text-xs text-ink-soft">{workspacePath}</p>
-              <p className="font-mono text-xs font-semibold text-ink">$ {startCommand || "mvn spring-boot:run"}</p>
+              <p className="font-mono text-xs sm:text-sm text-ink-soft">{workspacePath}</p>
+              <p className="font-mono text-xs sm:text-sm font-bold text-ink">$ {startCommand || "mvn spring-boot:run"}</p>
             </div>
-            <p className="mt-2.5 text-[11px] leading-relaxed text-bad/80">
+            <p className="mt-3 text-xs leading-relaxed text-bad/80">
               服务启动并监听端口后，返回此处点击「重新判题」即可。
             </p>
           </div>
         )}
 
         {error && (
-          <p className="mt-4 rounded-lg border border-bad/40 bg-bad-soft px-3.5 py-2 text-xs text-bad">
+          <p className="mt-4 rounded-lg border border-bad/40 bg-bad-soft px-4 py-2.5 text-sm text-bad font-medium">
             {error}
           </p>
         )}
       </section>
 
       {/* ================= 测试点：水平测试流水线 ================= */}
-      <section className="card p-4 sm:p-5">
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+      <section className="card p-5 sm:p-6">
+        <div className="mb-3.5 flex items-baseline justify-between gap-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted">
             测试执行流水线
           </span>
-          <span className="truncate text-xs text-muted">
+          <span className="truncate text-xs sm:text-sm text-muted">
             {progress?.current
               ? `正在执行：${progress.current}`
               : verdict
@@ -447,14 +447,14 @@ export function JudgeClient({
                   ? "准备中…"
                   : "尚未开始"}
           </span>
-          <span className="shrink-0 font-mono text-xs font-medium text-ink">
+          <span className="shrink-0 font-mono text-sm font-bold text-ink">
             {done}/{total}
           </span>
         </div>
 
-        <div className="log-scroll flex items-stretch overflow-x-auto pb-1.5">
+        <div className="log-scroll flex items-stretch overflow-x-auto pb-2">
           {tests.length === 0 ? (
-            <div className="flex h-18 w-full items-center justify-center text-xs text-muted">
+            <div className="flex h-20 w-full items-center justify-center text-sm text-muted">
               点击「开始判题」后，此处将按序执行并点亮各个回归测试节点
             </div>
           ) : (
@@ -463,7 +463,7 @@ export function JudgeClient({
                 {index > 0 && (
                   <span
                     aria-hidden
-                    className={`flex shrink-0 items-center px-1 text-xs font-mono transition-colors ${
+                    className={`flex shrink-0 items-center px-1.5 text-xs font-mono transition-colors ${
                       tests[index - 1].status === "passed"
                         ? "text-ok"
                         : tests[index - 1].status === "failed"
@@ -475,16 +475,16 @@ export function JudgeClient({
                   </span>
                 )}
                 <article
-                  className={`flex min-w-[130px] flex-1 flex-col overflow-hidden rounded-xl border transition-all ${
+                  className={`flex min-w-[140px] flex-1 flex-col overflow-hidden rounded-xl border transition-all ${
                     SEGMENT_STYLE[test.status]
                   }`}
                   title={test.reason ?? test.name}
                 >
-                  <div className="flex items-baseline justify-between gap-2 px-2.5 pt-2">
-                    <span className="font-mono text-[10px] opacity-70">
+                  <div className="flex items-baseline justify-between gap-2 px-3 pt-2.5">
+                    <span className="font-mono text-xs opacity-70">
                       {pad(index + 1)}
                     </span>
-                    <span className="font-mono text-[10px] font-bold">
+                    <span className="font-mono text-xs font-bold">
                       {test.status === "passed"
                         ? "PASS"
                         : test.status === "failed"
@@ -494,11 +494,11 @@ export function JudgeClient({
                             : "—"}
                     </span>
                   </div>
-                  <p className="min-h-[2.2rem] px-2.5 pt-1 text-[11px] font-medium leading-snug">
+                  <p className="min-h-[2.4rem] px-3 pt-1 text-xs font-semibold leading-snug">
                     {test.name}
                   </p>
-                  <div className="mt-1.5 px-2.5 pb-2">
-                    <div className="h-1 overflow-hidden rounded-full bg-black/10">
+                  <div className="mt-2 px-3 pb-2.5">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-black/10">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ease-out ${
                           FILL_STYLE[test.status]
@@ -506,7 +506,7 @@ export function JudgeClient({
                       />
                     </div>
                     {test.durationMs !== undefined && (
-                      <p className="mt-1 font-mono text-[10px] opacity-70">
+                      <p className="mt-1 font-mono text-[11px] opacity-75">
                         {formatDuration(test.durationMs)}
                       </p>
                     )}
@@ -519,34 +519,34 @@ export function JudgeClient({
       </section>
 
       {/* ================= 实时日志终端 + 提交记录 ================= */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_290px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* 现代深色终端控制台 */}
         <section className="card flex min-w-0 flex-col overflow-hidden border-neutral-800 bg-[#18181b] shadow-card">
-          <header className="flex items-center justify-between border-b border-neutral-800 bg-[#1f1f23] px-3.5 py-2">
-            <div className="flex items-center gap-2">
+          <header className="flex items-center justify-between border-b border-neutral-800 bg-[#1f1f23] px-4 py-2.5">
+            <div className="flex items-center gap-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
               </div>
-              <span className="font-mono text-[11px] font-semibold text-neutral-300 uppercase tracking-wider ml-1">
+              <span className="font-mono text-xs font-bold text-neutral-300 uppercase tracking-wider ml-1">
                 RUNNER CONSOLE
               </span>
             </div>
-            <span className="font-mono text-[10px] text-neutral-400">
+            <span className="font-mono text-xs text-neutral-400">
               {logs.length} lines
             </span>
           </header>
-          <div className="log-scroll h-[390px] overflow-y-auto p-3.5 font-mono text-[11.5px]">
+          <div className="log-scroll h-[400px] overflow-y-auto p-4 font-mono text-xs sm:text-[12.5px]">
             {logs.length === 0 ? (
-              <p className="py-12 text-center text-xs text-neutral-500 font-sans">
+              <p className="py-14 text-center text-sm text-neutral-500 font-sans">
                 判题执行的实时链路日志将输出至此处
               </p>
             ) : (
               logs.map((log) => (
-                <p key={log.seq} className="flex gap-2 font-mono text-[11px] leading-relaxed">
+                <p key={log.seq} className="flex gap-2.5 font-mono text-xs sm:text-[12.5px] leading-relaxed">
                   <span className="shrink-0 text-neutral-500">{formatClock(log.ts)}</span>
-                  <span className="w-5 shrink-0 text-neutral-400">
+                  <span className="w-6 shrink-0 text-neutral-400">
                     {log.testId ? `[${pad(indexById.get(log.testId) ?? 0)}]` : "[··]"}
                   </span>
                   <span className={`whitespace-pre-wrap break-all ${LEVEL_STYLE[log.level]}`}>
@@ -562,16 +562,16 @@ export function JudgeClient({
         {/* 历史提交记录 */}
         <section className="card flex min-w-0 flex-col overflow-hidden">
           <header className="flex items-center justify-between border-b border-line/80 px-4 py-2.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted">
               提交记录
             </span>
-            <span className="font-mono text-xs font-medium text-ink">{history.length}</span>
+            <span className="font-mono text-xs font-semibold text-ink">{history.length}</span>
           </header>
-          <div className="log-scroll h-[390px] overflow-y-auto p-2">
+          <div className="log-scroll h-[400px] overflow-y-auto p-2.5">
             {history.length === 0 ? (
-              <p className="py-12 text-center text-xs text-muted">暂无历史提交记录</p>
+              <p className="py-14 text-center text-sm text-muted">暂无历史提交记录</p>
             ) : (
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {history.map((entry) => {
                   const style = VERDICT_STYLE[entry.verdict] ?? VERDICT_STYLE.FAIL;
                   const isActive = entry.runId === activeRunId;
@@ -581,7 +581,7 @@ export function JudgeClient({
                         type="button"
                         onClick={() => loadRun(entry.runId)}
                         disabled={running}
-                        className={`w-full rounded-lg border px-2.5 py-2 text-left transition-all ${
+                        className={`w-full rounded-lg border px-3 py-2.5 text-left transition-all ${
                           isActive
                             ? "border-ink/30 bg-paper shadow-2xs"
                             : "border-transparent hover:bg-paper"
@@ -589,12 +589,12 @@ export function JudgeClient({
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={`chip ${style.className}`}>{style.label}</span>
-                          <span className="font-mono text-[10px] text-muted">
+                          <span className="font-mono text-xs text-muted">
                             {formatStamp(entry.at)}
                           </span>
                         </div>
-                        <p className="mt-1.5 flex items-center justify-between font-mono text-[10.5px] text-muted">
-                          <span className="font-medium text-ink-soft">
+                        <p className="mt-2 flex items-center justify-between font-mono text-xs text-muted">
+                          <span className="font-semibold text-ink-soft">
                             {entry.passed}/{entry.total} 通过
                           </span>
                           <span>{formatDuration(entry.durationMs)}</span>
@@ -607,7 +607,7 @@ export function JudgeClient({
             )}
           </div>
           {historyNote && (
-            <p className="border-t border-line px-3 py-2 text-[11px] leading-relaxed text-warn">
+            <p className="border-t border-line px-3.5 py-2 text-xs leading-relaxed text-warn">
               {historyNote}
             </p>
           )}

@@ -33,6 +33,8 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.01em;
@@ -73,8 +75,8 @@
     border: 1px solid var(--color-line);
     background: var(--color-surface);
     color: var(--color-ink-soft);
-    padding: 0.45rem 0.85rem;
-    font-size: 0.8125rem;
+    padding: 0.48rem 0.95rem;
+    font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.25rem;
     transition: all 140ms ease;
@@ -125,15 +127,15 @@
   .chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.35rem;
     border-radius: 6px;
     border: 1px solid var(--color-line);
     background: var(--color-paper);
     color: var(--color-muted);
-    padding: 0.12rem 0.5rem;
-    font-size: 0.725rem;
+    padding: 0.16rem 0.55rem;
+    font-size: 0.775rem;
     font-weight: 500;
-    line-height: 1.15rem;
+    line-height: 1.2rem;
   }
 
   .rule {
@@ -169,7 +171,7 @@
     animation: sweep 1.8s linear infinite;
   }
 
-  /* ---------- 难度段位徽标（LeetCode / Codeforces 风格极简徽标） ---------- */
+  /* ---------- 难度段位徽标 ---------- */
 
   .tier-newbie {
     border-color: #e2e8f0;
@@ -290,7 +292,7 @@
   }
 }
 
-/* 日志区与代码区滚动条（极简浅色/深色透明滑块） */
+/* 日志区与代码区滚动条 */
 .log-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
