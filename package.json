@@ -1,0 +1,35 @@
+{
+  "name": "shishan-hot100",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "pack:problem": "tsx scripts/pack-problem.ts",
+    "verify:problem": "tsx scripts/verify-problem.ts",
+    "lint:problems": "tsx scripts/lint-problem.ts"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.1",
+    "canvas-confetti": "^1.9.4",
+    "next": "^15.5.26",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/adm-zip": "^0.5.8",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "5.9"
+  }
+}

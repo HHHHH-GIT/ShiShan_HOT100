@@ -1,0 +1,295 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #faf9f5;
+  --color-paper-2: #f4f2ec;
+  --color-surface: #ffffff;
+  --color-line: #e8e4da;
+  --color-line-strong: #d5d0c2;
+  --color-ink: #1f1e1c;
+  --color-ink-soft: #3d3b37;
+  --color-muted: #6f6b63;
+  --color-accent: #c96442;
+  --color-accent-soft: #f5e8e2;
+  --color-ok: #4a7c59;
+  --color-ok-soft: #e7efe8;
+  --color-bad: #b0413e;
+  --color-bad-soft: #f7e8e6;
+  --color-warn: #a67c1a;
+  --color-warn-soft: #f7efdc;
+
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Songti SC", "Noto Serif SC", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --shadow-card: 0 1px 2px rgba(31, 30, 28, 0.04), 0 10px 28px -14px rgba(31, 30, 28, 0.12);
+  --shadow-lift: 0 2px 4px rgba(31, 30, 28, 0.05), 0 16px 32px -16px rgba(31, 30, 28, 0.18);
+}
+
+/* ---------- 基础层：可被 Tailwind 工具类覆盖 ---------- */
+
+@layer base {
+  html,
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image: radial-gradient(rgba(31, 30, 28, 0.025) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+}
+
+/* ---------- 组件层：Tailwind 工具类优先级高于这里 ---------- */
+
+@layer components {
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-hover {
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--color-line-strong);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border-radius: 10px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    padding: 0.5rem 0.95rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    cursor: pointer;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--color-paper-2);
+    border-color: var(--color-muted);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: #fbfaf7;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-ink-soft);
+    border-color: var(--color-ink-soft);
+  }
+
+  .btn-accent {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
+
+  .btn-accent:hover:not(:disabled) {
+    background: #b85838;
+    border-color: #b85838;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-paper-2);
+    color: var(--color-muted);
+    padding: 0.14rem 0.55rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+  }
+
+  .rule {
+    height: 1px;
+    background: linear-gradient(to right, var(--color-line), transparent);
+  }
+
+  .animate-shake {
+    animation: shake 620ms cubic-bezier(0.36, 0.07, 0.19, 0.97) 1;
+  }
+
+  .animate-pop-in {
+    animation: pop-in 460ms cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 240ms ease-out 1 both;
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 1.6s ease-out infinite;
+  }
+
+  .progress-sweep {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-accent) 0%,
+      #e0916f 40%,
+      var(--color-accent) 60%,
+      var(--color-accent) 100%
+    );
+    background-size: 200% 100%;
+    animation: sweep 2.2s linear infinite;
+  }
+
+  /* ---------- 难度段位徽标（由易到难） ---------- */
+
+  .tier-newbie {
+    border-color: #d5d0c2;
+    background: #f4f2ec;
+    color: #6f6b63;
+  }
+
+  .tier-pupil {
+    border-color: #a9c6b1;
+    background: #e8f0e9;
+    color: #3d6b4a;
+  }
+
+  .tier-specialist {
+    border-color: #9dc4c8;
+    background: #e2eff0;
+    color: #2c666d;
+  }
+
+  .tier-expert {
+    border-color: #a5c0da;
+    background: #e6edf5;
+    color: #2c5a86;
+  }
+
+  .tier-candidate-master {
+    border-color: #c3aed6;
+    background: #efe8f4;
+    color: #67457f;
+  }
+
+  .tier-master {
+    border-color: #e0b98c;
+    background: #faecdd;
+    color: #9d5f1e;
+  }
+
+  .tier-international-master {
+    border-color: #d9a978;
+    background: #f7e3d0;
+    color: #8f4c14;
+  }
+
+  .tier-grandmaster {
+    border-color: #d9a29c;
+    background: #f8e5e3;
+    color: #a1392f;
+  }
+
+  .tier-international-grandmaster {
+    border-color: #ce8981;
+    background: #f3dad7;
+    color: #8b2a20;
+  }
+
+  .tier-legendary-grandmaster {
+    border-color: transparent;
+    color: #2a2723;
+    background-image: linear-gradient(
+      90deg,
+      #e8695c,
+      #e0a13c,
+      #cfc247,
+      #6bab6f,
+      #4a8fb0,
+      #8a6bb0,
+      #e8695c
+    );
+    background-size: 300% 100%;
+    animation: rainbow-shift 3.6s linear infinite;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+}
+
+/* ---------- 动效关键帧 ---------- */
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px) rotate(-0.4deg); }
+  30% { transform: translateX(6px) rotate(0.4deg); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.86) translateY(8px); }
+  60% { opacity: 1; transform: scale(1.04) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(74, 124, 89, 0.35); }
+  100% { box-shadow: 0 0 0 10px rgba(74, 124, 89, 0); }
+}
+
+@keyframes sweep {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@keyframes rainbow-shift {
+  from { background-position: 0% 50%; }
+  to { background-position: 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-pop-in,
+  .animate-fade-up,
+  .animate-pulse-ring,
+  .progress-sweep,
+  .tier-legendary-grandmaster {
+    animation: none !important;
+  }
+}
+
+/* 日志区滚动条 */
+.log-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.log-scroll::-webkit-scrollbar-thumb {
+  background: #d9d4c8;
+  border-radius: 999px;
+}
+.log-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}

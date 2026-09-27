@@ -1,0 +1,182 @@
+version: 1
+baseUrl: "http://127.0.0.1:18080"
+
+tests:
+  - id: heartbeat
+    type: http
+    name: 心跳探活
+    displayName: 服务就绪检查
+    description: 服务必须已在 18080 端口就绪，返回 {"status":"ok"}
+    request:
+      method: GET
+      url: "${baseUrl}/hello"
+      timeoutMs: 3000
+    expect:
+      status: 200
+      json:
+        status: ok
+      maxMs: 1000
+
+  - id: place-order-single
+    type: http
+    name: 单次下单
+    displayName: 下单接口基本行为
+    description: 顺序调用下一次单必须成功；单请求场景本来就该是好的
+    request:
+      method: POST
+      url: "${baseUrl}/api/orders"
+      json:
+        productId: "P001"
+        quantity: 2
+    expect:
+      status: 200
+      json:
+        code: 0
+        data:
+          productId: "P001"
+          quantity: 2
+          status: "CREATED"
+      maxMs: 800
+
+  - id: cancel-order-restores-stock
+    type: workflow
+    name: 取消订单并回补库存
+    displayName: 取消订单与库存回补
+    description: 下单 → 取消 → 复查订单状态与库存；取消必须幂等地把库存还回去
+    steps:
+      - id: stock-initial
+        name: 记录下单前库存
+        request:
+          method: GET
+          url: "${baseUrl}/api/products/P001"
+        extract:
+          stockInitial: "$.data.stock"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              productId: "P001"
+
+      - id: place
+        name: 下单 2 件
+        request:
+          method: POST
+          url: "${baseUrl}/api/orders"
+          json:
+            productId: "P001"
+            quantity: 2
+        extract:
+          orderId: "$.data.orderId"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              status: "CREATED"
+
+      - id: cancel
+        name: 取消该订单
+        request:
+          method: POST
+          url: "${baseUrl}/api/orders/cancel"
+          json:
+            orderId: "${orderId}"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              status: "CANCELLED"
+
+      - id: cancel-again
+        name: 重复取消（幂等）
+        request:
+          method: POST
+          url: "${baseUrl}/api/orders/cancel"
+          json:
+            orderId: "${orderId}"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              status: "CANCELLED"
+
+      - id: order-after
+        name: 复查订单状态
+        request:
+          method: GET
+          url: "${baseUrl}/api/orders/${orderId}"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              orderId: "${orderId}"
+              status: "CANCELLED"
+
+      - id: stock-after
+        name: 复查库存已回补且没有多补
+        request:
+          method: GET
+          url: "${baseUrl}/api/products/P001"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              stock: "${stockInitial}"
+
+  - id: concurrent-mixed-load
+    type: load
+    name: 并发混合下单与取消
+    displayName: 高并发混合请求
+    description: 50 并发 × 5 轮混合下单 / 取消；要求 100% 成功，且不允许出现 504 / code=601 的超时降级
+    pre:
+      - id: seed-order
+        name: 预置一笔用于取消的订单
+        request:
+          method: POST
+          url: "${baseUrl}/api/orders"
+          json:
+            productId: "P001"
+            quantity: 1
+        extract:
+          seedOrderId: "$.data.orderId"
+        expect:
+          status: 200
+          json:
+            code: 0
+    concurrency: 50
+    rounds: 5
+    scenarios:
+      - name: 下单
+        weight: 1
+        request:
+          method: POST
+          url: "${baseUrl}/api/orders"
+          json:
+            productId: "P001"
+            quantity: 1
+      - name: 取消
+        weight: 1
+        request:
+          method: POST
+          url: "${baseUrl}/api/orders/cancel"
+          json:
+            orderId: "${seedOrderId}"
+    expect:
+      minSuccessRate: 1
+      forbidStatus: [504]
+      forbidBodyContains: ["\"code\":601"]
+
+  - id: log-no-deadlock-signs
+    type: log
+    name: 日志中无死锁与超时降级痕迹
+    displayName: 服务日志检查
+    description: 本次判题期间新增的日志里，不得出现加锁超时、锁顺序死锁告警或超时保护降级记录
+    notMatch:
+      - "lock acquire timeout"
+      - "possible lock-order deadlock"
+      - "TIMEOUT_GUARD"

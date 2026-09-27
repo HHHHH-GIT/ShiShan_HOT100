@@ -1,0 +1,19 @@
+server:
+  port: 18080
+  tomcat:
+    threads:
+      max: 200
+
+spring:
+  main:
+    banner-mode: off
+
+logging:
+  file:
+    name: ${SHISHAN_LOG_PATH:logs/app.log}
+  charset:
+    file: UTF-8
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+  level:
+    root: INFO

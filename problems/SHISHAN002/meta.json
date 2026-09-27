@@ -1,0 +1,15 @@
+{
+  "id": "SHISHAN002",
+  "title": "共享钱包的两副面孔",
+  "difficulty": "expert",
+  "tags": ["多租户", "缓存", "数据一致性", "时序问题"],
+  "summary": "一个钱包中台同时服务两款游戏：深林里看到的余额只有星轨里的零头；充值明明提示已到账，退出重进又变回原值。",
+  "apiContract": "端口固定为 `18081`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 | 预期响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/gameA/balance/{playerId}` | GET | - | `200` + `code=0`，`data.balance` 为余额，`data.unit` 为单位标识 |\n| `/api/gameA/recharge` | POST | `{\"playerId\":\"P001\",\"amount\":250}` | `200` + `code=0`，`data.{amount,balanceBefore,balanceAfter,unit}` |\n| `/api/gameA/trade` | POST | `{\"playerId\":\"P001\",\"side\":\"BUY\",\"amount\":10,\"bizId\":\"b-1\"}` | `200` + `code=0`，`data.{amount,side,balanceBefore,balanceAfter,unit}` |\n| `/api/gameA/ledger/{playerId}` | GET | - | `200` + `code=0`，`data.{unit,rawUnit,balance,balanceRaw,latest,entries}` |\n| `/api/gameB/balance/{playerId}` | GET | - | `200` + `code=0`，`data.balance` 为余额，`data.unit` 为单位标识 |\n| `/api/gameB/balances` | GET | 查询参数 `playerIds=P001,P002` | `200` + `code=0`，`data.balances` 数组，顺序与入参一致 |\n\n约定：\n\n- `side`：`BUY` = 玩家支出（余额减少），`SELL` = 玩家收入（余额增加）。\n- 业务错误（玩家不存在、金额非法、余额不足、超出风控上限）统一返回 **HTTP 200 + 业务码**。\n- 星轨风控规则：**单笔充值金额不得超过该玩家当前余额的 10 倍**。\n- 对账接口 `ledger` 里，`unit` 与 `rawUnit` 分别是「对外单位」和「账本侧单位」的标识，`balance` / `balanceRaw` 是同一个余额在两种单位下的取值；`latest` 是最近一笔流水，`entries` 按时间**倒序**。这两个单位标识到底是谁，接口会直接告诉你。\n- 种子玩家：`P001`（夜航星）、`P002`（白桦），初始余额均为 1000.000 元。",
+  "heartbeat": {
+    "port": 18081,
+    "path": "/hello"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN002.zip",
+  "startCommand": "mvn spring-boot:run"
+}

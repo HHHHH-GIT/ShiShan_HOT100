@@ -1,0 +1,271 @@
+version: 1
+baseUrl: "http://127.0.0.1:18081"
+
+tests:
+  - id: heartbeat
+    type: http
+    name: 心跳探活
+    displayName: 服务就绪检查
+    description: 服务必须已在 18081 端口就绪，返回 {"status":"ok"}
+    request:
+      method: GET
+      url: "${baseUrl}/hello"
+      timeoutMs: 3000
+    expect:
+      status: 200
+      json:
+        status: ok
+      maxMs: 1000
+
+  - id: gameA-recharge-and-reread
+    type: workflow
+    name: 充值后立刻可读
+    displayName: 充值后的读一致性
+    description: 充值响应承诺的 balanceAfter，必须与紧接着读到的余额一致 —— 不允许"显示已到账、刷新还是原值"
+    steps:
+      - id: before
+        name: 记录充值前余额
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameA/balance/P001"
+        extract:
+          b0: "$.data.balance"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              unit: "CNY"
+
+      - id: recharge
+        name: 充值 250 元
+        request:
+          method: POST
+          url: "${baseUrl}/api/gameA/recharge"
+          json:
+            playerId: "P001"
+            amount: 250
+        extract:
+          credited: "$.data.amount"
+          balanceAfter: "$.data.balanceAfter"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              amount: 250
+              balanceBefore: "${b0}"
+              unit: "CNY"
+
+      - id: reread
+        name: 重新查询余额
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameA/balance/P001"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              balance: "${balanceAfter}"
+
+  - id: gameA-trade-single
+    type: http
+    name: 单次交易结算
+    displayName: 交易结算接口基本行为
+    description: 星轨交易所结算一笔买入，必须成功并返回结算后的余额
+    request:
+      method: POST
+      url: "${baseUrl}/api/gameA/trade"
+      json:
+        playerId: "P002"
+        side: "BUY"
+        amount: 10
+        bizId: "regression-trade"
+    expect:
+      status: 200
+      json:
+        code: 0
+        data:
+          playerId: "P002"
+          side: "BUY"
+          unit: "CNY"
+      maxMs: 800
+
+  - id: ab-balance-consistent
+    type: workflow
+    name: 两个游戏读到同一个余额
+    displayName: 两个游戏读数一致
+    description: 星轨与深林共用同一个钱包，同一玩家的余额读数必须完全一致；深林的单查与批量两个出口都要对
+    steps:
+      - id: balance-a1
+        name: 星轨查 P001
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameA/balance/P001"
+        extract:
+          balanceA: "$.data.balance"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              unit: "CNY"
+
+      - id: balance-a2
+        name: 星轨查 P002
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameA/balance/P002"
+        extract:
+          balanceA2: "$.data.balance"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P002"
+              unit: "CNY"
+
+      - id: balance-b-single
+        name: 深林单查余额
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameB/balance/P001"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              unit: "CNY"
+              balance: "${balanceA}"
+
+      - id: balance-b-batch
+        name: 深林批量查余额
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameB/balances?playerIds=P001,P002"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              unit: "CNY"
+              balances:
+                - playerId: "P001"
+                  balance: "${balanceA}"
+                - playerId: "P002"
+                  balance: "${balanceA2}"
+
+  - id: ledger-in-out-unit-consistent
+    type: workflow
+    name: 入库单位与出库单位一致（对账）
+    displayName: 对账数据自洽
+    description: 对账接口的对外余额、底层原始余额、最新一笔流水，必须与充值响应完全自洽 —— 这条只看星轨与账本自身
+    steps:
+      - id: recharge
+        name: 充值 100 元
+        request:
+          method: POST
+          url: "${baseUrl}/api/gameA/recharge"
+          json:
+            playerId: "P001"
+            amount: 100
+        extract:
+          credited: "$.data.amount"
+          balanceAfter: "$.data.balanceAfter"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              amount: 100
+              unit: "CNY"
+
+      - id: ledger
+        name: 拉对账流水
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameA/ledger/P001"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              playerId: "P001"
+              unit: "CNY"
+              rawUnit: "厘"
+              balance: "${balanceAfter}"
+              latest:
+                type: "RECHARGE"
+                amount: "${credited}"
+                balanceAfter: "${balanceAfter}"
+
+  - id: concurrent-mixed-load
+    type: load
+    name: 并发混合读写
+    displayName: 高并发混合读写
+    description: 50 并发 × 5 轮，混合「星轨查余额 / 深林查余额 / 充值 / 交易结算」；要求全部成功、不出现 4xx/5xx 业务码与 HTTP 500
+    pre:
+      - id: seed-recharge
+        name: 预置一笔充值
+        request:
+          method: POST
+          url: "${baseUrl}/api/gameA/recharge"
+          json:
+            playerId: "P002"
+            amount: 10
+        expect:
+          status: 200
+          json:
+            code: 0
+    concurrency: 50
+    rounds: 5
+    scenarios:
+      - name: 星轨查余额
+        weight: 2
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameA/balance/P001"
+      - name: 深林查余额
+        weight: 2
+        request:
+          method: GET
+          url: "${baseUrl}/api/gameB/balance/P001"
+      - name: 充值
+        weight: 1
+        request:
+          method: POST
+          url: "${baseUrl}/api/gameA/recharge"
+          json:
+            playerId: "P001"
+            amount: 10
+      - name: 交易结算
+        weight: 1
+        request:
+          method: POST
+          url: "${baseUrl}/api/gameA/trade"
+          json:
+            playerId: "P002"
+            side: "SELL"
+            amount: 10
+            bizId: "load-trade"
+    expect:
+      minSuccessRate: 1
+      forbidStatus: [500]
+      forbidBodyContains: ["\"code\":400", "\"code\":500"]
+
+  - id: log-no-stale-cache
+    type: log
+    name: 日志中无脏缓存回填痕迹
+    displayName: 服务日志检查
+    description: 本次判题期间新增的日志里，不得出现「写库前把旧余额回填进缓存」的告警
+    notMatch:
+      - "STALE_CACHE"
+      - "refilled cache before ledger commit"

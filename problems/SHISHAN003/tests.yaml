@@ -1,0 +1,190 @@
+version: 1
+baseUrl: "http://127.0.0.1:18082"
+
+tests:
+  - id: heartbeat
+    type: http
+    name: 心跳探活
+    displayName: 服务就绪检查
+    description: 服务必须已在 18082 端口就绪，返回 {"status":"ok"}
+    request:
+      method: GET
+      url: "${baseUrl}/hello"
+      timeoutMs: 3000
+    expect:
+      status: 200
+      json:
+        status: ok
+      maxMs: 1000
+
+  - id: upload-text-file
+    type: workflow
+    name: 文本文件上传基础链路
+    displayName: 文本文件上传基础链路
+    description: 顺序调用上传接口，必须正常解析并返回业务状态码 0 与 64 位 SHA-256 哈希
+    steps:
+      - id: upload
+        name: 上传测试文本文件
+        request:
+          method: POST
+          url: "${baseUrl}/api/files/upload"
+          json:
+            filename: "readme.txt"
+            content: "U2hpc2hhbiBIb3QxMDAgRmlsZSBTdG9yYWdl"
+            contentType: "text/plain"
+        extract:
+          uploadedHash: "$.data.hash"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              filename: "readme.txt"
+
+  - id: file-meta-lookup
+    type: workflow
+    name: 附件元信息索引查询
+    displayName: 附件元信息索引查询
+    description: 上传文件后，通过返回的哈希检索元信息，文件名、文件大小与指纹必须精准匹配
+    steps:
+      - id: upload-for-meta
+        name: 上传用于元信息测试的文件
+        request:
+          method: POST
+          url: "${baseUrl}/api/files/upload"
+          json:
+            filename: "meta-spec.txt"
+            content: "TWV0YSBkYXRhIGxvb2t1cCBzcGVj"
+            contentType: "text/plain"
+        extract:
+          metaHash: "$.data.hash"
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: get-meta
+        name: 按哈希查询元信息
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/${metaHash}"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              filename: "meta-spec.txt"
+              hash: "${metaHash}"
+
+  - id: download-text-integrity
+    type: workflow
+    name: 文本附件下载与内容还原
+    displayName: 文本附件下载与内容还原
+    description: 下载已上传的文本文件，响应内容必须与原始数据完全一致
+    steps:
+      - id: upload-doc
+        name: 上传一段文档文本
+        request:
+          method: POST
+          url: "${baseUrl}/api/files/upload"
+          json:
+            filename: "hello.txt"
+            content: "SGVsbG8gV29ybGQgZnJvbSBTaGlzaGFuIEhvdDEwMCE="
+            contentType: "text/plain"
+        extract:
+          docHash: "$.data.hash"
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: download-doc
+        name: 下载该文档
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/${docHash}/download"
+        expect:
+          status: 200
+          contains:
+            - "Hello World from Shishan Hot100!"
+
+  - id: image-binary-magic-header
+    type: workflow
+    name: 图片二进制文件结构完整性
+    displayName: 图片二进制文件结构完整性
+    description: 上传透明 PNG 图片并下载，文件字节魔数必须保留且不能出现字符转码替代符
+    steps:
+      - id: upload-png
+        name: 上传标准 1x1 透明 PNG 图像
+        request:
+          method: POST
+          url: "${baseUrl}/api/files/upload"
+          json:
+            filename: "pixel.png"
+            content: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+            contentType: "image/png"
+        extract:
+          pngHash: "$.data.hash"
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: download-png
+        name: 下载该 PNG 文件
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/${pngHash}/download"
+        expect:
+          status: 200
+          contains:
+            - "PNG"
+            - "IHDR"
+            - "IEND"
+
+  - id: base64-plus-sign-resilience
+    type: workflow
+    name: 特殊符号 Base64 编码容错
+    displayName: 特殊符号编码容错
+    description: 上传被某些传输代理将加号误转为空格的 Base64 文件内容，确保系统能做兼容恢复，避免解码异常
+    steps:
+      - id: upload-plus
+        name: 上传被转为空格的 Base64 文件
+        request:
+          method: POST
+          url: "${baseUrl}/api/files/upload"
+          json:
+            filename: "binary.bin"
+            content: "QUI Q0Q="
+            contentType: "application/octet-stream"
+        extract:
+          plusHash: "$.data.hash"
+        expect:
+          status: 200
+          json:
+            code: 0
+
+      - id: check-plus-meta
+        name: 校验文件大小
+        request:
+          method: GET
+          url: "${baseUrl}/api/files/${plusHash}"
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              size: 5
+
+  - id: file-not-found-semantics
+    type: http
+    name: 不存在文件的异常保护
+    displayName: 异常文件检索保护
+    description: 检索不存在的文件哈希，返回规范的 404 状态与结构化信息，服务不应崩溃
+    request:
+      method: GET
+      url: "${baseUrl}/api/files/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    expect:
+      status: 404
+      json:
+        code: 404

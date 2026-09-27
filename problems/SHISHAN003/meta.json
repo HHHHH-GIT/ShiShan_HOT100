@@ -1,0 +1,15 @@
+{
+  "id": "SHISHAN003",
+  "title": "失真的文件仓库",
+  "difficulty": "candidate_master",
+  "tags": ["文件存储", "哈希算法", "字符编码", "数据完整性"],
+  "summary": "上传文件显示成功，但在仓库中按指纹拉取却找不到；图片下载后二进制损坏无法打开。",
+  "apiContract": "端口固定为 `18082`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 | 预期的正常响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/files/upload` | POST | `{\"filename\":\"demo.txt\",\"content\":\"<base64>\",\"contentType\":\"text/plain\"}` | `200` + `code=0`，`data.hash` 为 64 位 SHA-256 指纹 |\n| `/api/files/{hash}` | GET | - | `200` + `code=0`，`data.{filename,size,hash,contentType}` |\n| `/api/files/{hash}/download` | GET | - | `200` + 二进制字节流，`Content-Type` 与上传时一致 |\n\n约定：\n\n- 业务错误统一使用明确的 HTTP 状态码或业务码：文件不存在返回 **HTTP 404** + `{\"code\":404,\"msg\":\"file not found\",\"data\":null}`。\n- 接口上传入参中 `content` 为标准 Base64 编码的附件内容字符串。\n- 文件指纹采用标准 SHA-256 算法，长度为 64 位小写十六进制字符串。\n- 下载接口直接输出原始二进制流，保留文件原本的字节魔数与格式完整性。",
+  "heartbeat": {
+    "port": 18082,
+    "path": "/hello"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN003.zip",
+  "startCommand": "mvn spring-boot:run"
+}

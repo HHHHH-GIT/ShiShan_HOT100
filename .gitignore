@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# 用户解题目录（本地生成，不入库）
+workspace/
+
+# 压缩包文件
+*.zip
+problems/**/dist/*.zip
+
+# Java 构建产物
+problems/**/target/
+problems/**/logs/
+problems/**/*.log
+
+.env*
+!.env.example
+
+.trae/
