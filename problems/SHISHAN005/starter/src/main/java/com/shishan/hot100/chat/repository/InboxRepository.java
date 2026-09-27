@@ -16,7 +16,7 @@ public class InboxRepository {
     private final Map<String, List<Message>> userInboxes = new ConcurrentHashMap<>();
 
     public void add(String userId, Message message) {
-        userInboxes.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(message);
+        userInboxes.computeIfAbsent(userId, k -> new ArrayList<>()).add(message);
     }
 
     public InboxResult getInbox(String userId, String conversationId) {
