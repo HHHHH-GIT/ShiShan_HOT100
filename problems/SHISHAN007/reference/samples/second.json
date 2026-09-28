@@ -1,0 +1,43 @@
+{
+  "deviceId": "desk-a",
+  "updatedAt": "2026-09-28T12:01:00Z",
+  "trackedClients": [
+    "beta"
+  ],
+  "today": {
+    "clientModelComponents": {
+      "beta": {
+        "model-b": {
+          "inputTokens": 25,
+          "outputTokens": 20,
+          "cacheReadTokens": 20,
+          "cacheWriteTokens": 10
+        }
+      }
+    }
+  },
+  "month": {
+    "clientModelComponents": {
+      "beta": {
+        "model-b": {
+          "inputTokens": 75,
+          "outputTokens": 60,
+          "cacheReadTokens": 60,
+          "cacheWriteTokens": 30
+        }
+      }
+    }
+  },
+  "allTime": {
+    "clientModelComponents": {
+      "beta": {
+        "model-b": {
+          "inputTokens": 175,
+          "outputTokens": 140,
+          "cacheReadTokens": 140,
+          "cacheWriteTokens": 70
+        }
+      }
+    }
+  }
+}

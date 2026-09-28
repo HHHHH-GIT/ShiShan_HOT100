@@ -5,6 +5,7 @@ import { HintsPanel } from "@/components/HintsPanel";
 import { Markdown } from "@/components/Markdown";
 import { WorkspaceActions } from "@/components/WorkspaceActions";
 import { ProblemError, getProblem } from "@/lib/problems";
+import { getRecord } from "@/lib/state";
 import type { TestCase } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -36,17 +37,6 @@ function testSummary(test: TestCase): string {
   }
 }
 
-/** 用例清单在首次 AC 之前只给「数量 + 类型分布」，避免把根因写进用例名里剧透 */
-function typeDistribution(tests: TestCase[]): { label: string; count: number }[] {
-  const order: TestCase["type"][] = ["http", "workflow", "load", "log"];
-  return order
-    .map((type) => ({
-      label: TYPE_LABEL[type],
-      count: tests.filter((test) => test.type === type).length,
-    }))
-    .filter((item) => item.count > 0);
-}
-
 export default async function ProblemDetailPage({
   params,
 }: {
@@ -64,6 +54,8 @@ export default async function ProblemDetailPage({
 
   const { meta, spec } = problem;
   const solved = problem.status === "ac";
+  const passedTestIds = new Set((await getRecord(id))?.passedTestIds ?? []);
+  const unlockedCount = spec.tests.filter((test) => passedTestIds.has(test.id)).length;
 
   return (
     <div className="space-y-6">
@@ -133,58 +125,43 @@ export default async function ProblemDetailPage({
                   全部通过即为 AC
                 </span>
               </h2>
-              {!solved && (
-                <span className="chip border-line bg-paper text-muted text-xs">
-                  未解锁完整清单
-                </span>
-              )}
+              <span className="chip border-line bg-paper text-muted text-xs">
+                已解锁 {unlockedCount}/{problem.testCount}
+              </span>
             </div>
 
-            {solved ? (
-              <ol className="divide-y divide-line/60">
-                {spec.tests.map((test, index) => (
-                  <li key={test.id} className="flex gap-3.5 py-3.5 first:pt-0 last:pb-0">
+            <p className="mb-4 text-sm text-muted">
+              按最近一次判题结果展示：每个测试点通过后解锁名称、说明和详细日志，未通过的点继续隐藏。
+            </p>
+            <ol className="divide-y divide-line/60">
+              {spec.tests.map((test, index) => {
+                const unlocked = passedTestIds.has(test.id);
+                return (
+                  <li key={index} className="flex gap-3.5 py-3.5 first:pt-0 last:pb-0">
                     <span className="mt-0.5 shrink-0 font-mono text-sm text-muted">
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-bold text-ink">
-                          {test.displayName ?? test.name}
+                          {unlocked ? test.name : `测试点 ${index + 1}`}
                         </span>
                         <span className={`chip text-xs ${TYPE_CLASS[test.type]}`}>
                           {TYPE_LABEL[test.type]}
                         </span>
+                        <span className="text-xs text-muted">{unlocked ? "已通过 · 已解锁" : "通过后解锁"}</span>
                       </div>
-                      {test.description && (
-                        <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">
-                          {test.description}
-                        </p>
+                      {unlocked && test.description && (
+                        <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{test.description}</p>
                       )}
-                      <p className="mt-1.5 font-mono text-xs text-muted/80">
-                        {testSummary(test)}
-                      </p>
+                      {unlocked && (
+                        <p className="mt-1.5 font-mono text-xs text-muted/80">{testSummary(test)}</p>
+                      )}
                     </div>
                   </li>
-                ))}
-              </ol>
-            ) : (
-              <div className="space-y-3.5">
-                <p className="text-sm text-ink-soft">
-                  共 <span className="font-bold text-ink">{problem.testCount}</span> 个测试点：
-                  {typeDistribution(spec.tests)
-                    .map((item) => `${item.label} ×${item.count}`)
-                    .join("、")}
-                </p>
-                <div className="rounded-lg border border-line bg-paper px-4 py-3">
-                  <p className="text-sm leading-relaxed text-muted">
-                    具体的测试用例名称与断言说明在
-                    <strong className="font-semibold text-ink"> 首次 AC 之后解锁</strong>
-                    。用例名中包含验证指标，为保护排障探索体验，未通过前隐藏技术细节。
-                  </p>
-                </div>
-              </div>
-            )}
+                );
+              })}
+            </ol>
           </section>
 
           <HintsPanel

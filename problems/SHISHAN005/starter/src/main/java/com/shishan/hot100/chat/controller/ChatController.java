@@ -56,6 +56,7 @@ public class ChatController {
         return ApiResponse.ok(inbox);
     }
 
+    // before 是全局消息编号的排他上界，允许来自其他会话的同步检查点。
     @GetMapping("/history")
     public ApiResponse<PageResult> getHistory(
             @RequestParam String conversationId,

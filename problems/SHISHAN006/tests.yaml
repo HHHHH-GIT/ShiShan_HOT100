@@ -1,0 +1,1000 @@
+version: 1
+baseUrl: http://127.0.0.1:18085
+tests:
+  - id: heartbeat
+    type: http
+    name: 服务就绪
+    displayName: 服务就绪
+    description: 检查本地服务。
+    request:
+      method: GET
+      url: ${baseUrl}/hello
+      timeoutMs: 5000
+    expect:
+      status: 200
+      json:
+        status: ok
+  - id: ordinary-reply
+    type: workflow
+    name: 正常回复与历史一致
+    displayName: 会话核验 1
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R001
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 ordinary-reply：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 ordinary-reply：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 ordinary-reply：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 ordinary-reply：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: utf8-byte-boundaries
+    type: workflow
+    name: 中文与 emoji 跨字节分块
+    displayName: 会话核验 2
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R002
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 utf8-byte-boundaries：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 utf8-byte-boundaries：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 utf8-byte-boundaries：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 utf8-byte-boundaries：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: optional-field-space
+    type: workflow
+    name: data 字段无可选空格
+    displayName: 会话核验 3
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R003
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 optional-field-space：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 optional-field-space：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 optional-field-space：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 optional-field-space：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: multiline-event
+    type: workflow
+    name: 多行 data 组成单个事件
+    displayName: 会话核验 4
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R004
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 multiline-event：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 multiline-event：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 multiline-event：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 multiline-event：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: crlf-byte-boundaries
+    type: workflow
+    name: CRLF 跨读取边界
+    displayName: 会话核验 5
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R005
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 crlf-byte-boundaries：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 crlf-byte-boundaries：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 crlf-byte-boundaries：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 crlf-byte-boundaries：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: cr-event-boundaries
+    type: workflow
+    name: CR 事件分隔
+    displayName: 会话核验 6
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R006
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 cr-event-boundaries：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 cr-event-boundaries：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 cr-event-boundaries：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 cr-event-boundaries：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: metadata-keepalive
+    type: workflow
+    name: 注释、未知字段与空事件
+    displayName: 会话核验 7
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R007
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 metadata-keepalive：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 metadata-keepalive：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 metadata-keepalive：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 metadata-keepalive：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: mixed-archive-layout
+    type: workflow
+    name: 混合事件格式
+    displayName: 会话核验 8
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R008
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 mixed-archive-layout：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 mixed-archive-layout：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 mixed-archive-layout：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 mixed-archive-layout：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: eof-without-receipt
+    type: workflow
+    name: 提前 EOF 不得标记成功
+    displayName: 会话核验 9
+    description: 核对异常结束时的事件与历史记录，保留此前有效正文。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R009
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 eof-without-receipt：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: error
+          notContains:
+            - |
+              event: done
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 eof-without-receipt：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：
+                reasoning_content: 正在整理资料。
+                status: failed
+  - id: interrupted-read
+    type: workflow
+    name: 读取异常保留部分正文
+    displayName: 会话核验 10
+    description: 核对异常结束时的事件与历史记录，保留此前有效正文。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R010
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 interrupted-read：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: error
+          notContains:
+            - |
+              event: done
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 interrupted-read：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：
+                reasoning_content: 正在整理资料。
+                status: failed
+  - id: malformed-event
+    type: workflow
+    name: 损坏事件不可静默略过
+    displayName: 会话核验 11
+    description: 核对异常结束时的事件与历史记录，保留此前有效正文。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R011
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 malformed-event：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: error
+          notContains:
+            - |
+              event: done
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 malformed-event：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：
+                reasoning_content: 正在整理资料。
+                status: failed
+  - id: unfinished-data-event
+    type: workflow
+    name: 未结束事件不得提交
+    displayName: 会话核验 12
+    description: 核对异常结束时的事件与历史记录，保留此前有效正文。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R012
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 unfinished-data-event：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: error
+          notContains:
+            - |
+              event: done
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 unfinished-data-event：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：
+                reasoning_content: 正在整理资料。
+                status: failed
+  - id: unfinished-receipt
+    type: workflow
+    name: 未结束的完成事件不构成凭据
+    displayName: 会话核验 13
+    description: 核对异常结束时的事件与历史记录，保留此前有效正文。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R013
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 unfinished-receipt：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: error
+          notContains:
+            - |
+              event: done
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 unfinished-receipt：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：
+                reasoning_content: 正在整理资料。
+                status: failed
+  - id: stop-at-receipt
+    type: workflow
+    name: 完成后的其他记录不能混入正文
+    displayName: 会话核验 14
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R014
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: 回访 stop-at-receipt：你好🌍
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"回访 stop-at-receipt：你好🌍"}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: 回访 stop-at-receipt：你好🌍
+                status: completed
+              - role: assistant
+                content: 收到：回访 stop-at-receipt：你好🌍。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: alternate-input
+    type: workflow
+    name: 不同输入与特殊字符保真
+    displayName: 会话核验 15
+    description: 核对本次回答、思考内容和历史记录。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            status: ok
+      - id: create
+        request:
+          method: POST
+          url: ${baseUrl}/api/conversations
+          json:
+            sampleId: R002
+          timeoutMs: 5000
+        extract:
+          conversationId: $.conversation.id
+        expect:
+          status: 201
+      - id: send
+        continueOnFail: true
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send-stream
+          json:
+            conversation_id: ${conversationId}
+            content: |2-
+                引号" / 反斜杠\ / 换行
+              第二行🌍  
+          timeoutMs: 5000
+        expect:
+          status: 200
+          contains:
+            - |
+              event: user_message
+            - |
+              event: content
+            - |
+              event: done
+            - '{"delta":"  引号\" / 反斜杠\\ / 换行\n第二行🌍  "}'
+          notContains:
+            - |
+              event: error
+            - 这段是归档连接上的后续记录
+      - id: history
+        request:
+          method: GET
+          url: ${baseUrl}/api/conversations/${conversationId}/messages
+          timeoutMs: 5000
+        expect:
+          status: 200
+          json:
+            messages:
+              - role: user
+                content: |2-
+                    引号" / 反斜杠\ / 换行
+                  第二行🌍  
+                status: completed
+              - role: assistant
+                content: |-
+                  收到：  引号" / 反斜杠\ / 换行
+                  第二行🌍  。祝你今天顺利🌍！
+                reasoning_content: 正在整理资料。
+                status: completed
+  - id: diagnostic-evidence
+    type: log
+    name: 异常记录保留可检索线索
+    displayName: 服务记录核验
+    description: 异常路径留下业务诊断日志；正文与状态另行核验，删除日志不能使行为测试通过。
+    match:
+      - WARN REPLY_EVENT_REJECTED
+      - WARN REPLY_RECEIPT_MISSING

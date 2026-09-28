@@ -1,0 +1,15 @@
+{
+  "id": "SHISHAN006",
+  "title": "流式回复不完整问题",
+  "difficulty": "expert",
+  "tags": ["JavaScript", "流式传输", "SSE"],
+  "summary": "AI 助手流式打字输出频繁截断或空白，前端却误标完成，且沉淀的历史会话同样残缺不全。",
+  "apiContract": "端口固定为 `18085`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 | 预期响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/samples` | GET | - | `200` + 可选历史回放样本列表（R001–R014） |\n| `/api/conversations` | POST | `{\"sampleId\":\"R001\"}` | `201` + `{\"conversation\":{\"id\":1,\"sampleId\":\"R001\"}}` |\n| `/api/chat/send-stream` | POST | `{\"conversation_id\":1,\"content\":\"你好\"}` | `200` + SSE 打字机事件流（`text/event-stream`） |\n| `/api/conversations/:id/messages` | GET | - | `200` + `{\"messages\":[...]}`，包含提问与完整助手回复 |\n| `/api/chat/reset` | POST | - | `200` + `{\"status\":\"ok\"}`，重置所有会话与消息 |\n\n约定：\n\n- 流式事件规范：包含 `user_message`、`thinking`、`content`、`done`、`error` 五类标准事件。\n- 内容一致性：前端接收到的 SSE 流式文本必须与回读接口中的最终落库内容保持逐字一致。\n- 状态判定：流式正常生成完毕并收到 `[DONE]` 凭据后标记为 `completed`；若传输截断、协议错误或缺失完成凭据，标记为 `failed` 并抛出错误事件，不得误报为完成。",
+  "heartbeat": {
+    "port": 18085,
+    "path": "/hello"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN006.zip",
+  "startCommand": "npm ci && npm start"
+}

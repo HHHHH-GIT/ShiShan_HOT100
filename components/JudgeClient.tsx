@@ -393,7 +393,7 @@ export function JudgeClient({
             <span className="font-bold">
               {verdict === "AC"
                 ? `🎉 全部 ${total} 个测试点全部通过，AC！`
-                : `✘ 未通过：${total - passedCount} 个测试点断言失败，请检查下方执行日志。`}
+                : `✘ 未通过：${total - passedCount} 个测试点未通过；通过的点已解锁详细日志。`}
             </span>
             {verdict === "AC" && (
               <span
@@ -452,6 +452,7 @@ export function JudgeClient({
           </span>
         </div>
 
+        <p className="mb-3 text-xs text-muted">每个测试点通过后立即解锁名称与详细日志；未通过的点继续隐藏。</p>
         <div className="log-scroll flex items-stretch overflow-x-auto pb-2">
           {tests.length === 0 ? (
             <div className="flex h-20 w-full items-center justify-center text-sm text-muted">
@@ -478,7 +479,7 @@ export function JudgeClient({
                   className={`flex min-w-[140px] flex-1 flex-col overflow-hidden rounded-xl border transition-all ${
                     SEGMENT_STYLE[test.status]
                   }`}
-                  title={test.reason ?? test.name}
+                  title={test.reason ?? test.description ?? test.name}
                 >
                   <div className="flex items-baseline justify-between gap-2 px-3 pt-2.5">
                     <span className="font-mono text-xs opacity-70">

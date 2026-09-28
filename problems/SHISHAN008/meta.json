@@ -1,0 +1,19 @@
+{
+  "id": "SHISHAN008",
+  "title": "张冠李戴",
+  "difficulty": "candidate_master",
+  "tags": [
+    "Python",
+    "数据一致性",
+    "缓存"
+  ],
+  "summary": "面试代码分析工作台切换账号后发生权限串号与张冠李戴，且先查看摘要再看源码会导致代码内容意外丢失。",
+  "apiContract": "端口固定为 `18087`，心跳接口为 `GET /api/health`。\n\n| 接口 | 方法 | 请求体 / 查询参数 | 预期响应 |\n| --- | --- | --- | --- |\n| `/api/health` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/catalog` | GET | - | `200` + 候选人公开资料与提交总数清单 |\n| `/api/session` | POST | `{\"slot\":\"desk\",\"account\":\"alice\"}` | `200` + `{\"slot\":\"desk\",\"account\":\"alice\",\"generation\":1}`（`account: null` 表示访客） |\n| `/api/session` | GET | `?slot=desk` | `200` + 当前工位绑定的登录凭证与会话信息 |\n| `/api/reports` | POST | `{\"slot\":\"desk\",\"target\":\"alice\",\"view\":\"source\",\"sampleCount\":20}` | `200` + 新建任务快照详情（含任务 `id`、`status` 等） |\n| `/api/jobs/:id/run` | POST | - | `200` + 执行指定任务并返回生成的报告数据 |\n| `/api/jobs/:id` | GET | - | `200` + 查询指定任务当前详情与报告内容 |\n| `/api/history` | GET | - | `200` + `{\"jobs\":[...]}` 按提交顺序返回历史任务快照 |\n| `/api/source-audit` | GET | - | `200` + `{\"calls\":[...],\"reads\":{...}}` 上游数据源读取审计 |\n| `/api/reload` | POST | - | `200` + `{\"status\":\"ok\"}`，重载工作台数据组件 |\n| `/api/reset` | POST | - | `200` + `{\"status\":\"ok\"}`，重置所有任务、会话与缓存文件 |\n\n约定：\n\n- 身份隔离：任务的提交人、目标对象、语言范围与视图模式必须在提交任务（`POST /api/reports`）时固化，后续的工位账号切换或注销不得串改既有任务的所属凭证与结果。\n- 权限与可见性：公开资料向全员开放；本人报告为 `ready`，`source` 视图包含源码，`summary` 视图不返回 `code` 字段但样本与统计自洽；非本人与访客为 `restricted`，代码样本为空且统计归零。\n- 缓存不可变：各账号与视图缓存严格隔离，对外返回的报告视图严禁通过引用污染或篡改底层缓存。\n- 读取预算：同一候选人完整生成报告后，再次查询相同参数或缩小子集必须命中本地缓存，不得重复读取上游数据源。",
+  "heartbeat": {
+    "port": 18087,
+    "path": "/api/health"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN008.zip",
+  "startCommand": "python server.py"
+}

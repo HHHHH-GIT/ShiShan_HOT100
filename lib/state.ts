@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { WORKSPACE_DIR, WORKSPACE_STATE_FILE } from "./paths";
 import type { Verdict } from "./types";
 
@@ -18,6 +19,8 @@ export interface ProblemRecord {
   ac: boolean;
   lastRunAt: number;
   history: RunHistoryEntry[];
+  /** 最近一次判题通过的测试点，仅供服务端控制详情页展示。 */
+  passedTestIds: string[];
 }
 
 type StateFile = Record<string, Partial<ProblemRecord>>;
@@ -38,9 +41,11 @@ function normalize(record: Partial<ProblemRecord> | undefined): ProblemRecord | 
   if (!record || !record.verdict) return null;
   return {
     verdict: record.verdict,
-    ac: record.ac ?? record.verdict === "AC",
+    ac: record.ac === true || record.verdict === "AC" ||
+      (record.history ?? []).some((entry) => entry.verdict === "AC"),
     lastRunAt: record.lastRunAt ?? 0,
     history: record.history ?? [],
+    passedTestIds: record.passedTestIds ?? [],
   };
 }
 
@@ -56,28 +61,46 @@ export async function getHistory(problemId: string): Promise<RunHistoryEntry[]> 
 
 async function writeState(state: StateFile): Promise<void> {
   await fs.mkdir(WORKSPACE_DIR, { recursive: true });
-  await fs.writeFile(WORKSPACE_STATE_FILE, JSON.stringify(state, null, 2), "utf8");
+  const temporary = `${WORKSPACE_STATE_FILE}.${randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(temporary, JSON.stringify(state, null, 2), "utf8");
+    await fs.rename(temporary, WORKSPACE_STATE_FILE);
+  } finally {
+    await fs.rm(temporary, { force: true }).catch(() => undefined);
+  }
+}
+
+// 并行判题不能用较早读到的状态覆盖已写入的 AC 或其他题目的记录。
+const globalRef = globalThis as unknown as { __shishanStateJob?: Promise<void> };
+function updateState(update: (state: StateFile) => void): Promise<void> {
+  const job = (globalRef.__shishanStateJob ?? Promise.resolve())
+    .catch(() => undefined)
+    .then(async () => {
+      const state = await readState();
+      update(state);
+      await writeState(state);
+    });
+  globalRef.__shishanStateJob = job;
+  return job;
 }
 
 /** 记录一次判题结果，并追加到提交记录（最新在前） */
-export async function saveRun(problemId: string, entry: RunHistoryEntry): Promise<void> {
-  const state = await readState();
-  const previous = normalize(state[problemId]);
-  const history = [entry, ...(previous?.history ?? [])].slice(0, MAX_HISTORY);
+export async function saveRun(problemId: string, entry: RunHistoryEntry, passedTestIds: string[] = []): Promise<void> {
+  await updateState((state) => {
+    const previous = normalize(state[problemId]);
+    const history = [entry, ...(previous?.history ?? [])].slice(0, MAX_HISTORY);
 
-  state[problemId] = {
-    verdict: entry.verdict,
-    ac: entry.verdict === "AC",
-    lastRunAt: entry.at,
-    history,
-  };
-  await writeState(state);
+    state[problemId] = {
+      verdict: entry.verdict,
+      ac: previous?.ac === true || entry.verdict === "AC",
+      lastRunAt: entry.at,
+      history,
+      passedTestIds,
+    };
+  });
 }
 
 /** 重新下载 / 重置题目后，之前的判题结果不再对应当前代码，需要清掉 */
 export async function clearRecord(problemId: string): Promise<void> {
-  const state = await readState();
-  if (!(problemId in state)) return;
-  delete state[problemId];
-  await writeState(state);
+  await updateState((state) => { delete state[problemId]; });
 }

@@ -45,7 +45,7 @@ Every problem is a **working but bug-ridden** Spring Boot backend service. Downl
   - Multi-step workflows with variable extraction and interpolation;
   - Concurrency load testing with P95 latency and status code assertions;
   - Real-time log scanning for deadlock warnings and stale cache回填 traces.
-- 🛡️ **Anti-Leak Design**: Ticket-style problem descriptions without spoilers; test descriptions are masked until first AC.
+- 🛡️ **Anti-Leak Design**: Ticket-style problem descriptions without spoilers; each passing test unlocks its name, description, and detailed logs immediately; unfinished and failed tests remain masked.
 - 🏆 **10 Codeforces Tiers**: From `Newbie` up to `Candidate Master` and `Legendary Grandmaster`.
 - 🔒 **100% Local & Private**: No cloud dependencies, no code leaves your machine, zero API token costs.
 
@@ -55,11 +55,14 @@ Every problem is a **working but bug-ridden** Spring Boot backend service. Downl
 
 | ID | Title | Tier | Tags | Production Symptom |
 | :---: | :--- | :---: | :--- | :--- |
-| **01** | [SHISHAN001 · Slow Request Under Load](problems/SHISHAN001) | Newbie | `Concurrency` `Deadlock` `Degradation` | Works in development, but throws 504 timeouts under promotional traffic spikes. |
-| **02** | [SHISHAN002 · The Two Faces of Shared Wallet](problems/SHISHAN002) | Expert | `Multi-tenant` `Stale Cache` `Consistency` | Two games share a wallet: one sees balance 1000x smaller; top-ups revert on logout. |
-| **03** | [SHISHAN003 · Corrupted File Vault](problems/SHISHAN003) | Candidate Master | `File Storage` `Hashing` `Encoding` | File uploads succeed but cannot be retrieved by hash; downloaded images are corrupted. |
-| **04** | [SHISHAN004 · Time-Warped File Service](problems/SHISHAN004) | Pupil | `File Storage` `Path Mapping` `Runtime` | Upload succeeds, but immediate fetch 404s until service is rebuilt or restarted. |
-| **05** | [SHISHAN005 · Duplicate Message Reception](problems/SHISHAN005) | Grandmaster (Red) | `Distributed State` `Message Lifecycle` `State Sync` | Messages randomly appear 2~3 times; cursor pagination returns overlapping items; reconnect doubles message count. |
+| **01** | [SHISHAN001 · Slow Request Under Load](problems/SHISHAN001) | Newbie | `Java` `Multithreading` `Thread Synchronization` | Works in development, but throws 504 timeouts under promotional traffic spikes. |
+| **02** | [SHISHAN002 · The Two Faces of Shared Wallet](problems/SHISHAN002) | Expert | `Java` `Data Consistency` `Read/Write Ordering` | Two games share a wallet: one sees balance 1000x smaller; top-ups revert on logout. |
+| **03** | [SHISHAN003 · Corrupted File Vault](problems/SHISHAN003) | Candidate Master | `Java` `File Handling` `Hashing` | File uploads succeed but cannot be retrieved by hash; downloaded images are corrupted. |
+| **04** | [SHISHAN004 · Time-Warped File Service](problems/SHISHAN004) | Pupil | `Java` `File Handling` | Upload returns success and a resource URL, but immediately fetching that URL returns 404. |
+| **05** | [SHISHAN005 · Duplicate Message Reception](problems/SHISHAN005) | Grandmaster (Red) | `Java` `Multithreading` `Producer–Consumer` | Messages randomly appear 2~3 times; cursor pagination returns overlapping items; reconnect doubles message count. |
+| **06** | [SHISHAN006 · Incomplete Streaming Replies](problems/SHISHAN006) | Expert | `JavaScript` `Streaming` `SSE` | Replies can be incomplete or empty while marked complete, including after reloading history. |
+| **07** | [SHISHAN007 · Inconsistent Usage Statistics](problems/SHISHAN007) | Master | `JavaScript` `Data Consistency` `Read/Write Ordering` | Usage totals and breakdowns disagree around shift changes and quota refreshes. |
+| **08** | [SHISHAN008 · Mistaken Identity](problems/SHISHAN008) | Candidate Master | `Python` `Data Consistency` `Caching` | Switching accounts changes report ownership and availability; summary and source views disagree. |
 
 ---
 
@@ -67,8 +70,8 @@ Every problem is a **working but bug-ridden** Spring Boot backend service. Downl
 
 ### 1. Prerequisites
 - **Node.js**: `>= 18.18.0`
-- **Java JDK**: `>= 17`
-- **Apache Maven**: `>= 3.8.0`
+- **Java JDK**: `>= 17` for SHISHAN001–005; SHISHAN006–007 use **Node.js >= 22**, with no Java or database required.
+- **Apache Maven**: `>= 3.8.0` for SHISHAN001–005; run `npm ci` and then `npm start` for SHISHAN006–007.
 
 ### 2. Setup & Launch
 ```bash

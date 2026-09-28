@@ -2,9 +2,9 @@
   "id": "SHISHAN001",
   "title": "请求缓慢问题",
   "difficulty": "newbie",
-  "tags": ["多线程", "并发控制", "原子性", "服务降级"],
-  "summary": "多用户并发条件下，请求大面积变慢，最后被系统的超时保护强行降级。单个人用一切正常。",
-  "apiContract": "端口固定为 `18080`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 | 预期的正常响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/orders` | POST | `{\"productId\":\"P001\",\"quantity\":2}` | `200` + `code=0`，`data.status=\"CREATED\"` |\n| `/api/orders/cancel` | POST | `{\"orderId\":\"<下单返回的 id>\"}` | `200` + `code=0`，`data.status=\"CANCELLED\"` |\n| `/api/orders/{orderId}` | GET | - | `200` + `code=0` + 订单详情 |\n| `/api/products/{productId}` | GET | - | `200` + `code=0`，`data.stock` 为当前库存 |\n\n约定：\n\n- 业务错误（商品不存在、库存不足、订单不存在）统一返回 **HTTP 200 + 业务码**。\n- 取消订单是**幂等**的：重复取消仍返回 `code=0`，且**不能重复回补库存**。\n- 内置商品：`P001`（机械键盘）、`P002`（人体工学椅），初始库存均为 1000000。\n\n**注意**：超时降级响应（`HTTP 504` + `code=601`）是既有契约的一部分，不要调整它的形态，也不要靠屏蔽它来通过验收。",
+  "tags": ["Java", "多线程", "线程同步"],
+  "summary": "活动期间，下单和取消操作经常长时间没有结果，部分请求返回系统繁忙；日常使用时较少遇到。",
+  "apiContract": "端口固定为 `18080`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 | 预期的正常响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/orders` | POST | `{\"productId\":\"P001\",\"quantity\":2}` | `200` + `code=0`，`data.status=\"CREATED\"` |\n| `/api/orders/cancel` | POST | `{\"orderId\":\"<下单返回的 id>\"}` | `200` + `code=0`，`data.status=\"CANCELLED\"` |\n| `/api/orders/{orderId}` | GET | - | `200` + `code=0` + 订单详情 |\n| `/api/products/{productId}` | GET | - | `200` + `code=0`，`data.stock` 为当前库存 |\n\n约定：\n\n- 业务错误（商品不存在、库存不足、订单不存在）统一返回 **HTTP 200 + 业务码**。\n- 取消订单支持重复请求：重复取消仍返回 `code=0`，且**不能重复回补库存**。\n- 内置商品：`P001`（机械键盘）、`P002`（人体工学椅），初始库存均为 1000000。\n\n**注意**：超时降级响应（`HTTP 504` + `code=601`）是既有契约的一部分，不要调整它的形态。",
   "heartbeat": {
     "port": 18080,
     "path": "/hello"

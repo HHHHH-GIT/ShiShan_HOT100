@@ -215,7 +215,7 @@ tests:
           contains:
             - "hello basic"
 
-  - id: send-idempotency-concurrent
+  - id: send-idempotency-sequential
     type: workflow
     name: 快速重发场景下的消息唯一性
     displayName: 快速重发场景下的消息唯一性
@@ -448,6 +448,8 @@ tests:
           status: 200
           json:
             code: 0
+            data:
+              compensatedCount: 0
       - id: send-ack
         name: 客户端正常上报收到确认
         request:
@@ -591,3 +593,417 @@ tests:
       minSuccessRate: 1.0
       maxP95Ms: 500
       maxMs: 2000
+
+  - id: identity-interleaving
+    type: workflow
+    name: 标识哈希碰撞后的原消息重试
+    displayName: 交错消息往返检查
+    description: 不同的不透明客户端标识应分别保留；历史消息再次发送必须返回原实体。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: first
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: &a1
+            Authorization: ${defaultAuthToken}
+          json:
+            conversationId: c_identity
+            senderId: u1
+            clientMsgId: mobile-session-Aa
+            content: identical payload
+        extract:
+          originalId: $.data.msgId
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: second
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_identity
+            senderId: u1
+            clientMsgId: mobile-session-BB
+            content: identical payload
+        extract:
+          otherId: $.data.msgId
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: retry-first
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_identity
+            senderId: u1
+            clientMsgId: mobile-session-Aa
+            content: identical payload
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              msgId: ${originalId}
+      - id: check-records
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/history?conversationId=c_identity&limit=100
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              total: 2
+      - id: check-delivery
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/inbox?conversationId=c_identity&userId=u2
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 2
+  - id: retained-message-retry
+    type: workflow
+    name: 热索引淘汰后的历史消息重试
+    displayName: 连续会话后再次发送检查
+    description: 热索引容量不应改变保留期内原消息的重试语义。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: anchor
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_retained
+            senderId: u1
+            clientMsgId: retained-anchor
+            content: anchor payload
+        extract:
+          anchorId: $.data.msgId
+        expect:
+          status: 200
+          json:
+            code: 0
+      - {"id":"traffic-0","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-0","content":"ordinary traffic 0"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-1","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-1","content":"ordinary traffic 1"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-2","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-2","content":"ordinary traffic 2"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-3","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-3","content":"ordinary traffic 3"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-4","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-4","content":"ordinary traffic 4"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-5","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-5","content":"ordinary traffic 5"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-6","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-6","content":"ordinary traffic 6"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-7","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-7","content":"ordinary traffic 7"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-8","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-8","content":"ordinary traffic 8"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-9","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-9","content":"ordinary traffic 9"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-10","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-10","content":"ordinary traffic 10"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-11","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-11","content":"ordinary traffic 11"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-12","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-12","content":"ordinary traffic 12"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-13","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-13","content":"ordinary traffic 13"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-14","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-14","content":"ordinary traffic 14"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-15","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-15","content":"ordinary traffic 15"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-16","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-16","content":"ordinary traffic 16"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-17","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-17","content":"ordinary traffic 17"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-18","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-18","content":"ordinary traffic 18"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-19","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-19","content":"ordinary traffic 19"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-20","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-20","content":"ordinary traffic 20"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-21","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-21","content":"ordinary traffic 21"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-22","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-22","content":"ordinary traffic 22"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-23","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-23","content":"ordinary traffic 23"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-24","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-24","content":"ordinary traffic 24"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-25","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-25","content":"ordinary traffic 25"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-26","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-26","content":"ordinary traffic 26"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-27","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-27","content":"ordinary traffic 27"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-28","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-28","content":"ordinary traffic 28"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-29","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-29","content":"ordinary traffic 29"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-30","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-30","content":"ordinary traffic 30"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-31","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-31","content":"ordinary traffic 31"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-32","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-32","content":"ordinary traffic 32"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-33","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-33","content":"ordinary traffic 33"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-34","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-34","content":"ordinary traffic 34"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-35","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-35","content":"ordinary traffic 35"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-36","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-36","content":"ordinary traffic 36"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-37","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-37","content":"ordinary traffic 37"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-38","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-38","content":"ordinary traffic 38"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-39","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-39","content":"ordinary traffic 39"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-40","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-40","content":"ordinary traffic 40"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-41","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-41","content":"ordinary traffic 41"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-42","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-42","content":"ordinary traffic 42"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-43","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-43","content":"ordinary traffic 43"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-44","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-44","content":"ordinary traffic 44"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-45","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-45","content":"ordinary traffic 45"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-46","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-46","content":"ordinary traffic 46"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-47","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-47","content":"ordinary traffic 47"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-48","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-48","content":"ordinary traffic 48"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-49","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-49","content":"ordinary traffic 49"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-50","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-50","content":"ordinary traffic 50"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-51","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-51","content":"ordinary traffic 51"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-52","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-52","content":"ordinary traffic 52"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-53","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-53","content":"ordinary traffic 53"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-54","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-54","content":"ordinary traffic 54"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-55","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-55","content":"ordinary traffic 55"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-56","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-56","content":"ordinary traffic 56"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-57","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-57","content":"ordinary traffic 57"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-58","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-58","content":"ordinary traffic 58"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-59","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-59","content":"ordinary traffic 59"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-60","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-60","content":"ordinary traffic 60"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-61","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-61","content":"ordinary traffic 61"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-62","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-62","content":"ordinary traffic 62"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-63","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-63","content":"ordinary traffic 63"}},"expect":{"status":200,"json":{"code":0}}}
+      - {"id":"traffic-64","request":{"method":"POST","url":"${baseUrl}/api/chat/send","headers":{"Authorization":"${defaultAuthToken}"},"json":{"conversationId":"c_retained","senderId":"u1","clientMsgId":"traffic-64","content":"ordinary traffic 64"}},"expect":{"status":200,"json":{"code":0}}}
+      - id: retry-anchor
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_retained
+            senderId: u1
+            clientMsgId: retained-anchor
+            content: anchor payload
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              msgId: ${anchorId}
+      - id: check-records
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/history?conversationId=c_retained&limit=100
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              total: 66
+      - id: check-delivery
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/inbox?conversationId=c_retained&userId=u2
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 66
+  - id: message-update-redelivery
+    type: workflow
+    name: 可变投递键导致更新后重复入箱
+    displayName: 消息更新后的收信检查
+    description: 确认和撤回只更新原气泡；重复更新不应新增收件箱实体。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: first
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_update
+            senderId: u1
+            clientMsgId: update-first
+            content: before recall
+        extract:
+          updateId: $.data.msgId
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: second
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_update
+            senderId: u1
+            clientMsgId: update-second
+            content: unrelated message
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: ack
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/ack
+          headers: *a1
+          json:
+            conversationId: c_update
+            msgId: ${updateId}
+            userId: u2
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              acked: true
+      - id: recall
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/recall
+          headers: *a1
+          json:
+            conversationId: c_update
+            msgId: ${updateId}
+            operatorId: u1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              recalled: true
+      - id: recall-again
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/recall
+          headers: *a1
+          json:
+            conversationId: c_update
+            msgId: ${updateId}
+            operatorId: u1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              recalled: true
+      - id: check-delivery
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/inbox?conversationId=c_update&userId=u2
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              count: 2
+          contains:
+            - "[消息已撤回]"
+            - unrelated message
+          notContains:
+            - before recall
+      - id: check-records
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/history?conversationId=c_update&limit=100
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              total: 2
+  - id: filtered-history-boundary
+    type: workflow
+    name: 会话筛选后不存在的游标导致整页重放
+    displayName: 交错会话历史读取检查
+    description: before 是数值边界，可来自全局收信进度；不要求对应记录属于当前会话。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/reset
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: older
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_boundary
+            senderId: u1
+            clientMsgId: boundary-old
+            content: older record
+        extract:
+          olderId: $.data.msgId
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: checkpoint
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_other
+            senderId: u1
+            clientMsgId: boundary-other
+            content: other conversation
+        extract:
+          checkpoint: $.data.msgId
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: newer
+        request:
+          method: POST
+          url: ${baseUrl}/api/chat/send
+          headers: *a1
+          json:
+            conversationId: c_boundary
+            senderId: u1
+            clientMsgId: boundary-new
+            content: newer record
+        expect:
+          status: 200
+          json:
+            code: 0
+      - id: history-before
+        request:
+          method: GET
+          url: ${baseUrl}/api/chat/history?conversationId=c_boundary&before=${checkpoint}&limit=10
+          headers: *a1
+        expect:
+          status: 200
+          json:
+            code: 0
+            data:
+              total: 2
+              hasMore: false
+              messages:
+                - msgId: ${olderId}
+          contains:
+            - older record
+          notContains:
+            - newer record
+            - other conversation

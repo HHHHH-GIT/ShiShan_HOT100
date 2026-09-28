@@ -1,0 +1,68 @@
+{
+  "deviceId": "desk-a",
+  "updatedAt": "2026-09-28T12:00:00Z",
+  "trackedClients": [
+    "alpha",
+    "beta"
+  ],
+  "today": {
+    "clientModelComponents": {
+      "alpha": {
+        "model-shared": {
+          "inputTokens": 40,
+          "outputTokens": 10,
+          "cacheReadTokens": 50,
+          "cacheWriteTokens": 0
+        }
+      },
+      "beta": {
+        "model-b": {
+          "inputTokens": 20,
+          "outputTokens": 15,
+          "cacheReadTokens": 10,
+          "cacheWriteTokens": 5
+        }
+      }
+    }
+  },
+  "month": {
+    "clientModelComponents": {
+      "alpha": {
+        "model-shared": {
+          "inputTokens": 120,
+          "outputTokens": 30,
+          "cacheReadTokens": 150,
+          "cacheWriteTokens": 0
+        }
+      },
+      "beta": {
+        "model-b": {
+          "inputTokens": 60,
+          "outputTokens": 45,
+          "cacheReadTokens": 30,
+          "cacheWriteTokens": 15
+        }
+      }
+    }
+  },
+  "allTime": {
+    "clientModelComponents": {
+      "alpha": {
+        "model-shared": {
+          "inputTokens": 280,
+          "outputTokens": 70,
+          "cacheReadTokens": 350,
+          "cacheWriteTokens": 0
+        }
+      },
+      "beta": {
+        "model-b": {
+          "inputTokens": 140,
+          "outputTokens": 105,
+          "cacheReadTokens": 70,
+          "cacheWriteTokens": 35
+        }
+      }
+    }
+  }
+}

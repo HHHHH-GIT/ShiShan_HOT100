@@ -4,7 +4,7 @@
 
 用户通过上传接口上传文件，接口返回 HTTP 200 成功，并且在工程目录的 `src/main/resources/static/uploads/` 下能够看到新文件生成。
 但是紧接着请求该文件的访问接口时，服务端却返回 HTTP 404 Not Found。
-然而，一旦重新执行 `mvn compile` 构建或重启服务，该文件居然就能被成功访问了。
+若随后重新执行 Maven 构建，资源复制步骤可能让之前的文件变得可读。需要将构建与进程重启分开观察。
 
 ---
 
@@ -27,7 +27,7 @@
    Java 进程在运行时加载的是构建产物目录 `target/classes/static/uploads/` 中的资源。Maven 在项目构建阶段仅将当时的静态文件拷贝入 `target`，运行时动态上传写入 `src` 的新文件无法被 `ClassPathResource` 动态感知，因此抛出 404。
 
 3. **重启或重新编译“诈尸”现象**：
-   重新执行 `mvn compile` 时，Maven 触发资源拷贝插件（resources plugin），把 `src` 中的新增文件拷贝进了 `target/classes`，导致重启后该文件“神奇地”可以访问了。但任何真正的生产环境运行在打包后的 Jar 包内，绝对不存在动态写入 `src` 且能在 Classpath 立即生效的可能。
+   重新执行 `mvn compile` 时，Maven 触发资源拷贝插件（resources plugin），把 `src` 中的新增文件拷贝进了 `target/classes`。再次执行 `mvn spring-boot:run` 也可能伴随前置构建；单纯重启 JVM 或已打包 Jar 不会自动将源码目录的新增文件复制进类路径。但任何真正的生产环境运行在打包后的 Jar 包内，绝对不存在动态写入 `src` 且能在 Classpath 立即生效的可能。
 
 ---
 

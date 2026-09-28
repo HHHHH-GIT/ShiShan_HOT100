@@ -1,0 +1,19 @@
+{
+  "id": "SHISHAN007",
+  "title": "用量统计不一致问题",
+  "difficulty": "master",
+  "tags": [
+    "JavaScript",
+    "数据一致性",
+    "读写时序"
+  ],
+  "summary": "多设备用量报表的合计与明细对不上，交接班前后数字异常变化；部分环境刷新额度后，后续报表也出现不同结果。",
+  "apiContract": "端口固定为 `18086`，心跳接口为 `GET /api/health`。\n\n| 接口 | 方法 | 请求体 / 查询参数 | 预期响应 |\n| --- | --- | --- | --- |\n| `/api/health` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/api/ingest` | POST | `{\"deviceId\":\"desk-a\",\"updatedAt\":\"...\",\"trackedClients\":[...],...}` | `200` + `{\"ok\":true,\"device\":{...}}` |\n| `/api/stats` | GET | `?at=ISO_DATETIME`（可选） | `200` + 包含今日、当月及累计窗口的用量汇总大盘 |\n| `/api/devices` | GET | - | `200` + `{\"devices\":[...]}` 全量设备快照列表 |\n| `/api/devices/:id` | GET | - | `200` + `{\"device\":{...}}` 指定设备最新快照 |\n| `/api/reset` | POST | - | `200` + `{\"status\":\"ok\"}`，重置所有已上报设备数据 |\n\n约定：\n\n- 时区基准：日报表（`today`）与月报表（`month`）严格以 `Asia/Shanghai` 时区作为自然日与自然月划分依据。\n- 快照合并规则：上报中包含的工具以本次快照覆盖；同周期内未采集的工具保留已有用量总量及分项明细；累计窗口（`allTime`）始终保留历史数据。\n- 数据自洽性：四项 Token 分项（`inputTokens`、`outputTokens`、`cacheReadTokens`、`cacheWriteTokens`）之和等于总量；工具明细之和、模型明细之和与大盘总数严格相等。\n- 额度刷新隔离：仅刷新额度（`limitsOnly: true`）时，仅更新账户剩余配额，不得修改实际消耗用量，且不得篡改设备用量采集时间戳及归属窗口。",
+  "heartbeat": {
+    "port": 18086,
+    "path": "/api/health"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN007.zip",
+  "startCommand": "npm ci && npm start"
+}

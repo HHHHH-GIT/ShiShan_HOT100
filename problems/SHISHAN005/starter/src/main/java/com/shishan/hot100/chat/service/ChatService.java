@@ -42,7 +42,7 @@ public class ChatService {
     @Autowired
     private com.shishan.hot100.chat.repository.UserRepository userRepository;
 
-    public Message sendMessage(SendRequest request) {
+    public synchronized Message sendMessage(SendRequest request) {
         String clientMsgId = request.getClientMsgId();
         if (clientMsgId == null || clientMsgId.trim().isEmpty()) {
             clientMsgId = UUID.randomUUID().toString();
@@ -102,7 +102,7 @@ public class ChatService {
         return new TimelineResult(combined, combined.size());
     }
 
-    public void reset() {
+    public synchronized void reset() {
         messageRepository.clear();
         inboxRepository.clear();
         metricsService.reset();

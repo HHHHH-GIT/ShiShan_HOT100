@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { HttpExpect, HttpRequest } from "../types";
 import { deepPartialMatch, interpolate, preview } from "./values";
 
@@ -9,6 +10,7 @@ export interface SendResult {
   status: number | null;
   statusText: string;
   body: string;
+  bodySha256?: string;
   json: unknown;
   elapsedMs: number;
   /** 连接层错误（超时 / 连接被拒等） */
@@ -52,7 +54,8 @@ export async function sendRequest(
       signal: controller.signal,
       cache: "no-store",
     });
-    const text = await response.text().catch(() => "");
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const text = bytes.toString("utf8");
     const elapsedMs = Date.now() - startedAt;
 
     let json: unknown = null;
@@ -69,6 +72,7 @@ export async function sendRequest(
       status: response.status,
       statusText: response.statusText,
       body: text,
+      bodySha256: createHash("sha256").update(bytes).digest("hex"),
       json,
       elapsedMs,
     };
@@ -109,6 +113,10 @@ export function evaluateExpect(expect: HttpExpect, result: SendResult): string[]
 
   if (expect.status !== undefined && result.status !== expect.status) {
     failures.push(`期望 HTTP ${expect.status}，实际 HTTP ${result.status}`);
+  }
+
+  if (expect.bodySha256 !== undefined && result.bodySha256 !== expect.bodySha256.toLowerCase()) {
+    failures.push(`响应字节 SHA-256 不匹配：期望 ${expect.bodySha256.toLowerCase()}，实际 ${result.bodySha256 ?? "未获取"}`);
   }
 
   if (expect.json) {

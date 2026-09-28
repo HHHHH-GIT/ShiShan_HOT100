@@ -16,6 +16,10 @@ problems/**/target/
 problems/**/logs/
 problems/**/*.log
 
+# Python challenge runtime files
+problems/**/__pycache__/
+problems/**/.runtime/
+
 .env*
 !.env.example
 

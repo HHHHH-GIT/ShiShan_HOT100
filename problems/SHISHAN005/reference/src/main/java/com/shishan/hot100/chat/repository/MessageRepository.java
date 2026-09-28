@@ -3,36 +3,51 @@ package com.shishan.hot100.chat.repository;
 import com.shishan.hot100.chat.model.Message;
 import com.shishan.hot100.chat.model.PageResult;
 import org.springframework.stereotype.Repository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class MessageRepository {
+    private static final Logger log = LoggerFactory.getLogger(MessageRepository.class);
     private final AtomicLong idGenerator = new AtomicLong(1000);
     private final List<Message> messages = new CopyOnWriteArrayList<>();
-    private final Map<String, Message> idempotencyCache = new ConcurrentHashMap<>();
+    private final RecentMessageIndex recentMessages = new RecentMessageIndex();
 
     public Message findByClientMsgId(String clientMsgId) {
         if (clientMsgId == null) {
             return null;
         }
-        return idempotencyCache.get(clientMsgId);
+        Message cached = recentMessages.get(clientMsgId);
+        if (cached != null && clientMsgId.equals(cached.getClientMsgId())) {
+            return cached;
+        }
+        for (Message message : messages) {
+            if (clientMsgId.equals(message.getClientMsgId())) {
+                recentMessages.put(message);
+                return message;
+            }
+        }
+        return null;
     }
 
     public Message save(Message message) {
         if (message.getId() == null) {
             message.setId(idGenerator.incrementAndGet());
         }
-        messages.add(message);
-        if (message.getClientMsgId() != null) {
-            idempotencyCache.put(message.getClientMsgId(), message);
+        for (Message stored : messages) {
+            if (message.getClientMsgId() != null && message.getClientMsgId().equals(stored.getClientMsgId())) {
+                log.warn("MESSAGE_REPLAY clientMsgId={} previous={} current={}", message.getClientMsgId(), stored.getId(), message.getId());
+                break;
+            }
         }
+        messages.add(message);
+        recentMessages.put(message);
         return message;
     }
 
@@ -68,13 +83,9 @@ public class MessageRepository {
         conversationMessages.sort(Comparator.comparingLong(Message::getId).reversed());
 
         int startIndex = 0;
-        if (before != null) {
-            for (int i = 0; i < conversationMessages.size(); i++) {
-                if (conversationMessages.get(i).getId().equals(before)) {
-                    startIndex = i + 1;
-                    break;
-                }
-            }
+        while (startIndex < conversationMessages.size()
+                && before != null && conversationMessages.get(startIndex).getId() >= before) {
+            startIndex++;
         }
 
         List<Message> page = new ArrayList<>();
@@ -99,7 +110,7 @@ public class MessageRepository {
 
     public void clear() {
         messages.clear();
-        idempotencyCache.clear();
+        recentMessages.clear();
         idGenerator.set(1000);
     }
 }

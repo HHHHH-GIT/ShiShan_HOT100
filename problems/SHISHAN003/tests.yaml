@@ -137,6 +137,7 @@ tests:
           url: "${baseUrl}/api/files/${pngHash}/download"
         expect:
           status: 200
+          bodySha256: "63ef318d96b5d0d0ceba6e04a4e622b1158335cdc67c49e27839132c6f655058"
           contains:
             - "PNG"
             - "IHDR"

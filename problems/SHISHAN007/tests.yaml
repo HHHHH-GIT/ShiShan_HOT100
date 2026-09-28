@@ -1,0 +1,1248 @@
+version: 1
+baseUrl: http://127.0.0.1:18086
+tests:
+  - id: heartbeat
+    type: http
+    name: 服务就绪
+    displayName: 服务就绪
+    description: 检查本地报表服务。
+    request:
+      method: GET
+      url: ${baseUrl}/api/health
+      timeoutMs: 4000
+    expect:
+      status: 200
+      json: { status: ok }
+  - id: full-snapshot
+    type: workflow
+    name: 完整快照的三个统计视角
+    displayName: 报表核验 1
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: &a1 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a2 { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00.000Z, usageUpdatedAt: 2026-09-28T12:00:00.000Z, trackedClients: *a1, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a2 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:00:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } }
+  - id: partial-components
+    type: workflow
+    name: 未采集工具的分项完整保留
+    displayName: 报表核验 2
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00Z, trackedClients: &a3 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a4 { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00.000Z, usageUpdatedAt: 2026-09-28T12:01:00.000Z, trackedClients: *a3, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a4 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:01:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: shared-model
+    type: workflow
+    name: 共用模型的分项归属
+    displayName: 报表核验 3
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 7, outputTokens: 11, cacheReadTokens: 13, cacheWriteTokens: 17 } }, beta: { model-shared: { inputTokens: 19, outputTokens: 23, cacheReadTokens: 29, cacheWriteTokens: 31 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 21, outputTokens: 33, cacheReadTokens: 39, cacheWriteTokens: 51 } }, beta: { model-shared: { inputTokens: 57, outputTokens: 69, cacheReadTokens: 87, cacheWriteTokens: 93 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 49, outputTokens: 77, cacheReadTokens: 91, cacheWriteTokens: 119 } }, beta: { model-shared: { inputTokens: 133, outputTokens: 161, cacheReadTokens: 203, cacheWriteTokens: 217 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00Z, trackedClients: &a5 [ beta ], today: { clientModelComponents: { beta: { model-shared: { inputTokens: 37, outputTokens: 41, cacheReadTokens: 43, cacheWriteTokens: 47 } } } }, month: { clientModelComponents: { beta: { model-shared: { inputTokens: 111, outputTokens: 123, cacheReadTokens: 129, cacheWriteTokens: 141 } } } }, allTime: { clientModelComponents: { beta: { model-shared: { inputTokens: 259, outputTokens: 287, cacheReadTokens: 301, cacheWriteTokens: 329 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a6 { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00.000Z, usageUpdatedAt: 2026-09-28T12:01:00.000Z, trackedClients: *a5, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 216, inputTokens: 44, outputTokens: 52, cacheReadTokens: 56, cacheWriteTokens: 64, clients: { alpha: 48, beta: 168 }, models: { model-shared: 216 }, clientComponents: { alpha: { inputTokens: 7, outputTokens: 11, cacheReadTokens: 13, cacheWriteTokens: 17 }, beta: { inputTokens: 37, outputTokens: 41, cacheReadTokens: 43, cacheWriteTokens: 47 } }, modelComponents: { model-shared: { inputTokens: 44, outputTokens: 52, cacheReadTokens: 56, cacheWriteTokens: 64 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 7, outputTokens: 11, cacheReadTokens: 13, cacheWriteTokens: 17 } }, beta: { model-shared: { inputTokens: 37, outputTokens: 41, cacheReadTokens: 43, cacheWriteTokens: 47 } } } }, month: { totalTokens: 648, inputTokens: 132, outputTokens: 156, cacheReadTokens: 168, cacheWriteTokens: 192, clients: { alpha: 144, beta: 504 }, models: { model-shared: 648 }, clientComponents: { alpha: { inputTokens: 21, outputTokens: 33, cacheReadTokens: 39, cacheWriteTokens: 51 }, beta: { inputTokens: 111, outputTokens: 123, cacheReadTokens: 129, cacheWriteTokens: 141 } }, modelComponents: { model-shared: { inputTokens: 132, outputTokens: 156, cacheReadTokens: 168, cacheWriteTokens: 192 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 21, outputTokens: 33, cacheReadTokens: 39, cacheWriteTokens: 51 } }, beta: { model-shared: { inputTokens: 111, outputTokens: 123, cacheReadTokens: 129, cacheWriteTokens: 141 } } } }, allTime: { totalTokens: 1512, inputTokens: 308, outputTokens: 364, cacheReadTokens: 392, cacheWriteTokens: 448, clients: { alpha: 336, beta: 1176 }, models: { model-shared: 1512 }, clientComponents: { alpha: { inputTokens: 49, outputTokens: 77, cacheReadTokens: 91, cacheWriteTokens: 119 }, beta: { inputTokens: 259, outputTokens: 287, cacheReadTokens: 301, cacheWriteTokens: 329 } }, modelComponents: { model-shared: { inputTokens: 308, outputTokens: 364, cacheReadTokens: 392, cacheWriteTokens: 448 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 49, outputTokens: 77, cacheReadTokens: 91, cacheWriteTokens: 119 } }, beta: { model-shared: { inputTokens: 259, outputTokens: 287, cacheReadTokens: 301, cacheWriteTokens: 329 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a6 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:01:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 216, inputTokens: 44, outputTokens: 52, cacheReadTokens: 56, cacheWriteTokens: 64, clients: { alpha: 48, beta: 168 }, models: { model-shared: 216 }, clientComponents: { alpha: { inputTokens: 7, outputTokens: 11, cacheReadTokens: 13, cacheWriteTokens: 17 }, beta: { inputTokens: 37, outputTokens: 41, cacheReadTokens: 43, cacheWriteTokens: 47 } }, modelComponents: { model-shared: { inputTokens: 44, outputTokens: 52, cacheReadTokens: 56, cacheWriteTokens: 64 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 7, outputTokens: 11, cacheReadTokens: 13, cacheWriteTokens: 17 } }, beta: { model-shared: { inputTokens: 37, outputTokens: 41, cacheReadTokens: 43, cacheWriteTokens: 47 } } } }, month: { totalTokens: 648, inputTokens: 132, outputTokens: 156, cacheReadTokens: 168, cacheWriteTokens: 192, clients: { alpha: 144, beta: 504 }, models: { model-shared: 648 }, clientComponents: { alpha: { inputTokens: 21, outputTokens: 33, cacheReadTokens: 39, cacheWriteTokens: 51 }, beta: { inputTokens: 111, outputTokens: 123, cacheReadTokens: 129, cacheWriteTokens: 141 } }, modelComponents: { model-shared: { inputTokens: 132, outputTokens: 156, cacheReadTokens: 168, cacheWriteTokens: 192 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 21, outputTokens: 33, cacheReadTokens: 39, cacheWriteTokens: 51 } }, beta: { model-shared: { inputTokens: 111, outputTokens: 123, cacheReadTokens: 129, cacheWriteTokens: 141 } } } }, allTime: { totalTokens: 1512, inputTokens: 308, outputTokens: 364, cacheReadTokens: 392, cacheWriteTokens: 448, clients: { alpha: 336, beta: 1176 }, models: { model-shared: 1512 }, clientComponents: { alpha: { inputTokens: 49, outputTokens: 77, cacheReadTokens: 91, cacheWriteTokens: 119 }, beta: { inputTokens: 259, outputTokens: 287, cacheReadTokens: 301, cacheWriteTokens: 329 } }, modelComponents: { model-shared: { inputTokens: 308, outputTokens: 364, cacheReadTokens: 392, cacheWriteTokens: 448 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 49, outputTokens: 77, cacheReadTokens: 91, cacheWriteTokens: 119 } }, beta: { model-shared: { inputTokens: 259, outputTokens: 287, cacheReadTokens: 301, cacheWriteTokens: 329 } } } } } }
+  - id: explicit-zero
+    type: workflow
+    name: 采集到零值必须替换旧快照
+    displayName: 报表核验 4
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00Z, trackedClients: &a7 [ alpha, beta ], today: { clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } }, month: { clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } }, allTime: { clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a8 { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00.000Z, usageUpdatedAt: 2026-09-28T12:01:00.000Z, trackedClients: *a7, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, clients: { alpha: 0, beta: 0 }, models: { model-b: 0 }, clientComponents: { alpha: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, beta: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, modelComponents: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } }, month: { totalTokens: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, clients: { alpha: 0, beta: 0 }, models: { model-b: 0 }, clientComponents: { alpha: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, beta: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, modelComponents: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } }, allTime: { totalTokens: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, clients: { alpha: 0, beta: 0 }, models: { model-b: 0 }, clientComponents: { alpha: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, beta: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, modelComponents: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a8 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:01:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, clients: { alpha: 0, beta: 0 }, models: { model-b: 0 }, clientComponents: { alpha: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, beta: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, modelComponents: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } }, month: { totalTokens: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, clients: { alpha: 0, beta: 0 }, models: { model-b: 0 }, clientComponents: { alpha: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, beta: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, modelComponents: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } }, allTime: { totalTokens: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, clients: { alpha: 0, beta: 0 }, models: { model-b: 0 }, clientComponents: { alpha: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, beta: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, modelComponents: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } }, clientModelComponents: { alpha: {}, beta: { model-b: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } } } } } }
+  - id: repeat-full
+    type: workflow
+    name: 相同完整快照重传不累加
+    displayName: 报表核验 5
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: &a9 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a10 { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00.000Z, usageUpdatedAt: 2026-09-28T12:00:00.000Z, trackedClients: *a9, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a10 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:00:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } }
+  - id: repeat-partial
+    type: workflow
+    name: 部分采集重传不累加保留数据
+    displayName: 报表核验 6
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00Z, trackedClients: [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-3
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00Z, trackedClients: &a11 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a12 { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00.000Z, usageUpdatedAt: 2026-09-28T12:01:00.000Z, trackedClients: *a11, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a12 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:01:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: local-midnight
+    type: workflow
+    name: 业务日切换的保留范围
+    displayName: 报表核验 7
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T15:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T16:01:00Z, trackedClients: &a13 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a14 { deviceId: desk-a, updatedAt: 2026-09-28T16:01:00.000Z, usageUpdatedAt: 2026-09-28T16:01:00.000Z, trackedClients: *a13, limits: {}, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a14 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T16:01:00.000Z, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: utc-midnight
+    type: workflow
+    name: 同一业务日跨 UTC 午夜
+    displayName: 报表核验 8
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T23:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-29T00:01:00Z, trackedClients: &a15 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a16 { deviceId: desk-a, updatedAt: 2026-09-29T00:01:00.000Z, usageUpdatedAt: 2026-09-29T00:01:00.000Z, trackedClients: *a15, limits: {}, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a16 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-29T00:01:00.000Z, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: local-month
+    type: workflow
+    name: 业务月切换的保留范围
+    displayName: 报表核验 9
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-30T15:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-30T16:01:00Z, trackedClients: &a17 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a18 { deviceId: desk-a, updatedAt: 2026-09-30T16:01:00.000Z, usageUpdatedAt: 2026-09-30T16:01:00.000Z, trackedClients: *a17, limits: {}, periodKeys: { today: 2026-10-01, month: 2026-10, allTime: all }, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 225, inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30, clients: { beta: 225 }, models: { model-b: 225 }, clientComponents: { beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a18 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-30T16:01:00.000Z, periodKeys: { today: 2026-10-01, month: 2026-10, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 225, inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30, clients: { beta: 225 }, models: { model-b: 225 }, clientComponents: { beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: utc-month
+    type: workflow
+    name: 同一业务月跨 UTC 月末
+    displayName: 报表核验 10
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-30T23:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-10-01T00:01:00Z, trackedClients: &a19 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a20 { deviceId: desk-a, updatedAt: 2026-10-01T00:01:00.000Z, usageUpdatedAt: 2026-10-01T00:01:00.000Z, trackedClients: *a19, limits: {}, periodKeys: { today: 2026-10-01, month: 2026-10, allTime: all }, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a20 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-10-01T00:01:00.000Z, periodKeys: { today: 2026-10-01, month: 2026-10, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: local-year
+    type: workflow
+    name: 业务年末的日月窗口
+    displayName: 报表核验 11
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-12-31T15:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-12-31T16:01:00Z, trackedClients: &a21 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a22 { deviceId: desk-a, updatedAt: 2026-12-31T16:01:00.000Z, usageUpdatedAt: 2026-12-31T16:01:00.000Z, trackedClients: *a21, limits: {}, periodKeys: { today: 2027-01-01, month: 2027-01, allTime: all }, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 225, inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30, clients: { beta: 225 }, models: { model-b: 225 }, clientComponents: { beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a22 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-12-31T16:01:00.000Z, periodKeys: { today: 2027-01-01, month: 2027-01, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 225, inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30, clients: { beta: 225 }, models: { model-b: 225 }, clientComponents: { beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: utc-year
+    type: workflow
+    name: 同一业务日跨 UTC 年末
+    displayName: 报表核验 12
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-12-31T23:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2027-01-01T00:01:00Z, trackedClients: &a23 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a24 { deviceId: desk-a, updatedAt: 2027-01-01T00:01:00.000Z, usageUpdatedAt: 2027-01-01T00:01:00.000Z, trackedClients: *a23, limits: {}, periodKeys: { today: 2027-01-01, month: 2027-01, allTime: all }, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a24 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2027-01-01T00:01:00.000Z, periodKeys: { today: 2027-01-01, month: 2027-01, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 175, inputTokens: 65, outputTokens: 30, cacheReadTokens: 70, cacheWriteTokens: 10, clients: { alpha: 100, beta: 75 }, models: { model-shared: 100, model-b: 75 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: quota-only
+    type: workflow
+    name: 额度刷新不改用量快照
+    displayName: 报表核验 13
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: &a25 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-29T12:00:00Z, limitsOnly: true, limits: { remaining: 61 } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-3
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-30T12:00:00Z, limitsOnly: true, limits: &a26 { remaining: 59 } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a27 { deviceId: desk-a, updatedAt: 2026-09-30T12:00:00.000Z, usageUpdatedAt: 2026-09-28T12:00:00.000Z, trackedClients: *a25, limits: *a26, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a27 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:00:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } }
+  - id: direct-next-day
+    type: workflow
+    name: 隔日直接采集的统计结果
+    displayName: 报表核验 14
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T15:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-29T00:02:00Z, trackedClients: &a28 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a29 { deviceId: desk-a, updatedAt: 2026-09-29T00:02:00.000Z, usageUpdatedAt: 2026-09-29T00:02:00.000Z, trackedClients: *a28, limits: {}, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a29 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-29T00:02:00.000Z, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: quota-next-day
+    type: workflow
+    name: 额度刷新不能重定用量业务日
+    displayName: 报表核验 15
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T15:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-29T00:00:00Z, limitsOnly: true, limits: { remaining: 70 } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-3
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-29T00:01:00Z, limitsOnly: true, limits: &a31 { remaining: 65 } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-4
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-29T00:02:00Z, trackedClients: &a30 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a32 { deviceId: desk-a, updatedAt: 2026-09-29T00:02:00.000Z, usageUpdatedAt: 2026-09-29T00:02:00.000Z, trackedClients: *a30, limits: *a31, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a32 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-29T00:02:00.000Z, periodKeys: { today: 2026-09-29, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 525, inputTokens: 195, outputTokens: 90, cacheReadTokens: 210, cacheWriteTokens: 30, clients: { alpha: 300, beta: 225 }, models: { model-shared: 300, model-b: 225 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: quota-next-month
+    type: workflow
+    name: 额度刷新不能重定用量业务月
+    displayName: 报表核验 16
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-30T15:59:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-10-01T00:01:00Z, limitsOnly: true, limits: &a34 { remaining: 42 } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-3
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-10-01T00:02:00Z, trackedClients: &a33 [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a35 { deviceId: desk-a, updatedAt: 2026-10-01T00:02:00.000Z, usageUpdatedAt: 2026-10-01T00:02:00.000Z, trackedClients: *a33, limits: *a34, periodKeys: { today: 2026-10-01, month: 2026-10, allTime: all }, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 225, inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30, clients: { beta: 225 }, models: { model-b: 225 }, clientComponents: { beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a35 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-10-01T00:02:00.000Z, periodKeys: { today: 2026-10-01, month: 2026-10, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 75, inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10, clients: { beta: 75 }, models: { model-b: 75 }, clientComponents: { beta: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, modelComponents: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } }, clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { totalTokens: 225, inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30, clients: { beta: 225 }, models: { model-b: 225 }, clientComponents: { beta: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 1225, inputTokens: 455, outputTokens: 210, cacheReadTokens: 490, cacheWriteTokens: 70, clients: { alpha: 700, beta: 525 }, models: { model-shared: 700, model-b: 525 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: multi-device
+    type: workflow
+    name: 多设备共用工具与模型分别汇总
+    displayName: 报表核验 17
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: &a36 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-b, updatedAt: 2026-09-28T12:02:00Z, trackedClients: &a37 [ alpha, gamma ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 3, outputTokens: 5, cacheReadTokens: 7, cacheWriteTokens: 11 } }, gamma: { model-b: { inputTokens: 13, outputTokens: 17, cacheReadTokens: 19, cacheWriteTokens: 23 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 9, outputTokens: 15, cacheReadTokens: 21, cacheWriteTokens: 33 } }, gamma: { model-b: { inputTokens: 39, outputTokens: 51, cacheReadTokens: 57, cacheWriteTokens: 69 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 21, outputTokens: 35, cacheReadTokens: 49, cacheWriteTokens: 77 } }, gamma: { model-b: { inputTokens: 91, outputTokens: 119, cacheReadTokens: 133, cacheWriteTokens: 161 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a38 { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00.000Z, usageUpdatedAt: 2026-09-28T12:00:00.000Z, trackedClients: *a36, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: device-2
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-b
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a39 { deviceId: desk-b, updatedAt: 2026-09-28T12:02:00.000Z, usageUpdatedAt: 2026-09-28T12:02:00.000Z, trackedClients: *a37, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 98, inputTokens: 16, outputTokens: 22, cacheReadTokens: 26, cacheWriteTokens: 34, clients: { alpha: 26, gamma: 72 }, models: { model-shared: 26, model-b: 72 }, clientComponents: { alpha: { inputTokens: 3, outputTokens: 5, cacheReadTokens: 7, cacheWriteTokens: 11 }, gamma: { inputTokens: 13, outputTokens: 17, cacheReadTokens: 19, cacheWriteTokens: 23 } }, modelComponents: { model-shared: { inputTokens: 3, outputTokens: 5, cacheReadTokens: 7, cacheWriteTokens: 11 }, model-b: { inputTokens: 13, outputTokens: 17, cacheReadTokens: 19, cacheWriteTokens: 23 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 3, outputTokens: 5, cacheReadTokens: 7, cacheWriteTokens: 11 } }, gamma: { model-b: { inputTokens: 13, outputTokens: 17, cacheReadTokens: 19, cacheWriteTokens: 23 } } } }, month: { totalTokens: 294, inputTokens: 48, outputTokens: 66, cacheReadTokens: 78, cacheWriteTokens: 102, clients: { alpha: 78, gamma: 216 }, models: { model-shared: 78, model-b: 216 }, clientComponents: { alpha: { inputTokens: 9, outputTokens: 15, cacheReadTokens: 21, cacheWriteTokens: 33 }, gamma: { inputTokens: 39, outputTokens: 51, cacheReadTokens: 57, cacheWriteTokens: 69 } }, modelComponents: { model-shared: { inputTokens: 9, outputTokens: 15, cacheReadTokens: 21, cacheWriteTokens: 33 }, model-b: { inputTokens: 39, outputTokens: 51, cacheReadTokens: 57, cacheWriteTokens: 69 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 9, outputTokens: 15, cacheReadTokens: 21, cacheWriteTokens: 33 } }, gamma: { model-b: { inputTokens: 39, outputTokens: 51, cacheReadTokens: 57, cacheWriteTokens: 69 } } } }, allTime: { totalTokens: 686, inputTokens: 112, outputTokens: 154, cacheReadTokens: 182, cacheWriteTokens: 238, clients: { alpha: 182, gamma: 504 }, models: { model-shared: 182, model-b: 504 }, clientComponents: { alpha: { inputTokens: 21, outputTokens: 35, cacheReadTokens: 49, cacheWriteTokens: 77 }, gamma: { inputTokens: 91, outputTokens: 119, cacheReadTokens: 133, cacheWriteTokens: 161 } }, modelComponents: { model-shared: { inputTokens: 21, outputTokens: 35, cacheReadTokens: 49, cacheWriteTokens: 77 }, model-b: { inputTokens: 91, outputTokens: 119, cacheReadTokens: 133, cacheWriteTokens: 161 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 21, outputTokens: 35, cacheReadTokens: 49, cacheWriteTokens: 77 } }, gamma: { model-b: { inputTokens: 91, outputTokens: 119, cacheReadTokens: 133, cacheWriteTokens: 161 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a38, *a39 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:02:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 2, periods: { today: { totalTokens: 248, inputTokens: 76, outputTokens: 47, cacheReadTokens: 86, cacheWriteTokens: 39, clients: { alpha: 126, beta: 50, gamma: 72 }, models: { model-shared: 126, model-b: 122 }, clientComponents: { alpha: { inputTokens: 43, outputTokens: 15, cacheReadTokens: 57, cacheWriteTokens: 11 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 }, gamma: { inputTokens: 13, outputTokens: 17, cacheReadTokens: 19, cacheWriteTokens: 23 } }, modelComponents: { model-shared: { inputTokens: 43, outputTokens: 15, cacheReadTokens: 57, cacheWriteTokens: 11 }, model-b: { inputTokens: 33, outputTokens: 32, cacheReadTokens: 29, cacheWriteTokens: 28 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 43, outputTokens: 15, cacheReadTokens: 57, cacheWriteTokens: 11 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, gamma: { model-b: { inputTokens: 13, outputTokens: 17, cacheReadTokens: 19, cacheWriteTokens: 23 } } } }, month: { totalTokens: 744, inputTokens: 228, outputTokens: 141, cacheReadTokens: 258, cacheWriteTokens: 117, clients: { alpha: 378, beta: 150, gamma: 216 }, models: { model-shared: 378, model-b: 366 }, clientComponents: { alpha: { inputTokens: 129, outputTokens: 45, cacheReadTokens: 171, cacheWriteTokens: 33 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 }, gamma: { inputTokens: 39, outputTokens: 51, cacheReadTokens: 57, cacheWriteTokens: 69 } }, modelComponents: { model-shared: { inputTokens: 129, outputTokens: 45, cacheReadTokens: 171, cacheWriteTokens: 33 }, model-b: { inputTokens: 99, outputTokens: 96, cacheReadTokens: 87, cacheWriteTokens: 84 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 129, outputTokens: 45, cacheReadTokens: 171, cacheWriteTokens: 33 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, gamma: { model-b: { inputTokens: 39, outputTokens: 51, cacheReadTokens: 57, cacheWriteTokens: 69 } } } }, allTime: { totalTokens: 1736, inputTokens: 532, outputTokens: 329, cacheReadTokens: 602, cacheWriteTokens: 273, clients: { alpha: 882, beta: 350, gamma: 504 }, models: { model-shared: 882, model-b: 854 }, clientComponents: { alpha: { inputTokens: 301, outputTokens: 105, cacheReadTokens: 399, cacheWriteTokens: 77 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 }, gamma: { inputTokens: 91, outputTokens: 119, cacheReadTokens: 133, cacheWriteTokens: 161 } }, modelComponents: { model-shared: { inputTokens: 301, outputTokens: 105, cacheReadTokens: 399, cacheWriteTokens: 77 }, model-b: { inputTokens: 231, outputTokens: 224, cacheReadTokens: 203, cacheWriteTokens: 196 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 301, outputTokens: 105, cacheReadTokens: 399, cacheWriteTokens: 77 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, gamma: { model-b: { inputTokens: 91, outputTokens: 119, cacheReadTokens: 133, cacheWriteTokens: 161 } } } } } }
+  - id: mixed-device-dates
+    type: workflow
+    name: 不同快照日期按窗口汇总
+    displayName: 报表核验 18
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-27T12:00:00Z, trackedClients: &a40 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-b, updatedAt: 2026-09-28T12:00:00Z, trackedClients: &a41 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a42 { deviceId: desk-a, updatedAt: 2026-09-27T12:00:00.000Z, usageUpdatedAt: 2026-09-27T12:00:00.000Z, trackedClients: *a40, limits: {}, periodKeys: { today: 2026-09-27, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: device-2
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-b
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a43 { deviceId: desk-b, updatedAt: 2026-09-28T12:00:00.000Z, usageUpdatedAt: 2026-09-28T12:00:00.000Z, trackedClients: *a41, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a42, *a43 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:00:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 2, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 900, inputTokens: 360, outputTokens: 150, cacheReadTokens: 360, cacheWriteTokens: 30, clients: { alpha: 600, beta: 300 }, models: { model-shared: 600, model-b: 300 }, clientComponents: { alpha: { inputTokens: 240, outputTokens: 60, cacheReadTokens: 300, cacheWriteTokens: 0 }, beta: { inputTokens: 120, outputTokens: 90, cacheReadTokens: 60, cacheWriteTokens: 30 } }, modelComponents: { model-shared: { inputTokens: 240, outputTokens: 60, cacheReadTokens: 300, cacheWriteTokens: 0 }, model-b: { inputTokens: 120, outputTokens: 90, cacheReadTokens: 60, cacheWriteTokens: 30 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 240, outputTokens: 60, cacheReadTokens: 300, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 120, outputTokens: 90, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { totalTokens: 2100, inputTokens: 840, outputTokens: 350, cacheReadTokens: 840, cacheWriteTokens: 70, clients: { alpha: 1400, beta: 700 }, models: { model-shared: 1400, model-b: 700 }, clientComponents: { alpha: { inputTokens: 560, outputTokens: 140, cacheReadTokens: 700, cacheWriteTokens: 0 }, beta: { inputTokens: 280, outputTokens: 210, cacheReadTokens: 140, cacheWriteTokens: 70 } }, modelComponents: { model-shared: { inputTokens: 560, outputTokens: 140, cacheReadTokens: 700, cacheWriteTokens: 0 }, model-b: { inputTokens: 280, outputTokens: 210, cacheReadTokens: 140, cacheWriteTokens: 70 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 560, outputTokens: 140, cacheReadTokens: 700, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 280, outputTokens: 210, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } } }
+  - id: rescan-tool
+    type: workflow
+    name: 恢复采集后旧数据被完整替换
+    displayName: 报表核验 19
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:01:00Z, trackedClients: [ beta ], today: { clientModelComponents: { beta: { model-b: { inputTokens: 25, outputTokens: 20, cacheReadTokens: 20, cacheWriteTokens: 10 } } } }, month: { clientModelComponents: { beta: { model-b: { inputTokens: 75, outputTokens: 60, cacheReadTokens: 60, cacheWriteTokens: 30 } } } }, allTime: { clientModelComponents: { beta: { model-b: { inputTokens: 175, outputTokens: 140, cacheReadTokens: 140, cacheWriteTokens: 70 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-3
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:02:00Z, trackedClients: &a44 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 } }, beta: { model-b: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 } }, beta: { model-b: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 } }, beta: { model-b: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a45 { deviceId: desk-a, updatedAt: 2026-09-28T12:02:00.000Z, usageUpdatedAt: 2026-09-28T12:02:00.000Z, trackedClients: *a44, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 77, inputTokens: 13, outputTokens: 16, cacheReadTokens: 22, cacheWriteTokens: 26, clients: { alpha: 17, beta: 60 }, models: { model-shared: 17, model-b: 60 }, clientComponents: { alpha: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 }, beta: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } }, modelComponents: { model-shared: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 }, model-b: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 } }, beta: { model-b: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } } } }, month: { totalTokens: 231, inputTokens: 39, outputTokens: 48, cacheReadTokens: 66, cacheWriteTokens: 78, clients: { alpha: 51, beta: 180 }, models: { model-shared: 51, model-b: 180 }, clientComponents: { alpha: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 }, beta: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } }, modelComponents: { model-shared: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 }, model-b: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 } }, beta: { model-b: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } } } }, allTime: { totalTokens: 539, inputTokens: 91, outputTokens: 112, cacheReadTokens: 154, cacheWriteTokens: 182, clients: { alpha: 119, beta: 420 }, models: { model-shared: 119, model-b: 420 }, clientComponents: { alpha: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 }, beta: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } }, modelComponents: { model-shared: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 }, model-b: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 } }, beta: { model-b: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a45 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:02:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 77, inputTokens: 13, outputTokens: 16, cacheReadTokens: 22, cacheWriteTokens: 26, clients: { alpha: 17, beta: 60 }, models: { model-shared: 17, model-b: 60 }, clientComponents: { alpha: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 }, beta: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } }, modelComponents: { model-shared: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 }, model-b: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 5, cacheWriteTokens: 7 } }, beta: { model-b: { inputTokens: 11, outputTokens: 13, cacheReadTokens: 17, cacheWriteTokens: 19 } } } }, month: { totalTokens: 231, inputTokens: 39, outputTokens: 48, cacheReadTokens: 66, cacheWriteTokens: 78, clients: { alpha: 51, beta: 180 }, models: { model-shared: 51, model-b: 180 }, clientComponents: { alpha: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 }, beta: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } }, modelComponents: { model-shared: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 }, model-b: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 6, outputTokens: 9, cacheReadTokens: 15, cacheWriteTokens: 21 } }, beta: { model-b: { inputTokens: 33, outputTokens: 39, cacheReadTokens: 51, cacheWriteTokens: 57 } } } }, allTime: { totalTokens: 539, inputTokens: 91, outputTokens: 112, cacheReadTokens: 154, cacheWriteTokens: 182, clients: { alpha: 119, beta: 420 }, models: { model-shared: 119, model-b: 420 }, clientComponents: { alpha: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 }, beta: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } }, modelComponents: { model-shared: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 }, model-b: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 14, outputTokens: 21, cacheReadTokens: 35, cacheWriteTokens: 49 } }, beta: { model-b: { inputTokens: 77, outputTokens: 91, cacheReadTokens: 119, cacheWriteTokens: 133 } } } } } }
+  - id: offset-equivalence
+    type: workflow
+    name: 等价时区表示得到同一报表
+    displayName: 报表核验 20
+    description: 核对设备快照、总览、工具明细与模型明细，日/月/累计窗口分别验收。
+    steps:
+      - id: reset
+        request:
+          method: POST
+          url: ${baseUrl}/api/reset
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { status: ok }
+      - id: report-1
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T20:00:00+08:00, trackedClients: [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: report-2
+        request:
+          method: POST
+          url: ${baseUrl}/api/ingest
+          json: { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00Z, trackedClients: &a46 [ alpha, beta ], today: { clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } }
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { ok: true }
+      - id: device-1
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices/desk-a
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { device: &a47 { deviceId: desk-a, updatedAt: 2026-09-28T12:00:00.000Z, usageUpdatedAt: 2026-09-28T12:00:00.000Z, trackedClients: *a46, limits: {}, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } } }
+      - id: inventory
+        continueOnFail: true
+        request:
+          method: GET
+          url: ${baseUrl}/api/devices
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { devices: [ *a47 ] }
+      - id: stats
+        request:
+          method: GET
+          url: ${baseUrl}/api/stats
+          timeoutMs: 4000
+        expect:
+          status: 200
+          json: { reportTimeZone: Asia/Shanghai, asOf: 2026-09-28T12:00:00.000Z, periodKeys: { today: 2026-09-28, month: 2026-09, allTime: all }, deviceCount: 1, periods: { today: { totalTokens: 150, inputTokens: 60, outputTokens: 25, cacheReadTokens: 60, cacheWriteTokens: 5, clients: { alpha: 100, beta: 50 }, models: { model-shared: 100, model-b: 50 }, clientComponents: { alpha: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, beta: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, modelComponents: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 }, model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 40, outputTokens: 10, cacheReadTokens: 50, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 20, outputTokens: 15, cacheReadTokens: 10, cacheWriteTokens: 5 } } } }, month: { totalTokens: 450, inputTokens: 180, outputTokens: 75, cacheReadTokens: 180, cacheWriteTokens: 15, clients: { alpha: 300, beta: 150 }, models: { model-shared: 300, model-b: 150 }, clientComponents: { alpha: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, beta: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, modelComponents: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 }, model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 120, outputTokens: 30, cacheReadTokens: 150, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 60, outputTokens: 45, cacheReadTokens: 30, cacheWriteTokens: 15 } } } }, allTime: { totalTokens: 1050, inputTokens: 420, outputTokens: 175, cacheReadTokens: 420, cacheWriteTokens: 35, clients: { alpha: 700, beta: 350 }, models: { model-shared: 700, model-b: 350 }, clientComponents: { alpha: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, beta: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, modelComponents: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 }, model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } }, clientModelComponents: { alpha: { model-shared: { inputTokens: 280, outputTokens: 70, cacheReadTokens: 350, cacheWriteTokens: 0 } }, beta: { model-b: { inputTokens: 140, outputTokens: 105, cacheReadTokens: 70, cacheWriteTokens: 35 } } } } } }
+  - id: diagnostic-integrity
+    type: log
+    name: 报表分项不再产生一致性告警
+    displayName: 运行记录核验
+    description: 上报保留记录，原始分项与统计投影不应偏离；接口另有独立数值断言。
+    match:
+      - INFO REPORT_ACCEPTED
+    notMatch:
+      - WARN REPORT_COMPONENT_DRIFT
+      - ERROR REPORT_REJECTED

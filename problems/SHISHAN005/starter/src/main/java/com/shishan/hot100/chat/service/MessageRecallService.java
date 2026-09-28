@@ -13,6 +13,9 @@ public class MessageRecallService {
     @Autowired
     private MessageRepository messageRepository;
 
+    @Autowired
+    private EventConsumer eventConsumer;
+
     public boolean recallMessage(RecallRequest request) {
         if (request == null || request.getMsgId() == null) {
             return false;
@@ -27,7 +30,9 @@ public class MessageRecallService {
             return false;
         }
 
+        // 撤回沿用原消息编号，向接收端发布原气泡的更新。
         message.setContent("[消息已撤回]");
+        eventConsumer.consume(message);
         return true;
     }
 }

@@ -54,7 +54,7 @@ async function recordRun(runId: string, problemId: string, verdict: Verdict): Pr
     passed: tests.filter((test) => test.status === "passed").length,
     total: tests.length,
     durationMs: state ? (state.finishedAt ?? Date.now()) - state.startedAt : 0,
-  });
+  }, tests.filter((test) => test.status === "passed").map((test) => test.id));
 }
 
 async function execute(runId: string, options: RunOptions): Promise<void> {
@@ -115,8 +115,8 @@ async function execute(runId: string, options: RunOptions): Promise<void> {
     log("error", `心跳未通过：${heartbeat.detail}`);
     log("error", hint.replace(/\n/g, " "));
     runStore.setProgress(runId, { done: 0, total, current: null });
-    runStore.finish(runId, "heartbeat_failed");
     await recordRun(runId, options.problemId, "heartbeat_failed");
+    runStore.finish(runId, "heartbeat_failed");
     return;
   }
 
@@ -180,6 +180,6 @@ async function execute(runId: string, options: RunOptions): Promise<void> {
       ? `全部 ${total} 个测试点通过 → AC`
       : `存在未通过的测试点 → FAIL`,
   );
-  runStore.finish(runId, verdict);
   await recordRun(runId, options.problemId, verdict);
+  runStore.finish(runId, verdict);
 }

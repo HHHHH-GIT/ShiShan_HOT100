@@ -3,6 +3,7 @@ package com.shishan.hot100.chat.model;
 public class SendRequest {
     private String conversationId;
     private String senderId;
+    // 客户端标识是不透明且区分大小写的字符串；历史保留期间重发沿用原消息。
     private String clientMsgId;
     private String content;
 

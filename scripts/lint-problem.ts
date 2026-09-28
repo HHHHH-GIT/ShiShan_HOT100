@@ -174,7 +174,7 @@ async function lintProblem(problemId: string): Promise<Finding[]> {
       findings.push({
         level: "error",
         where: `tests.yaml ${test.id}`,
-        detail: "缺 displayName（详情页在 AC 之前只展示它）",
+        detail: "缺 displayName（需要保留中性的展示名称）",
       });
       continue;
     }

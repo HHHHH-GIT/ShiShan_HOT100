@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>用量报表 · 设备回访</title>
+<style>
+  * { box-sizing:border-box } body { margin:0;background:#f5f3ee;color:#262820;font:15px/1.65 system-ui,sans-serif }
+  main { max-width:1160px;margin:32px auto;padding:24px } h1 { margin:6px 0 10px } h2 { font-size:18px } .muted { color:#676d60 }
+  button,select,textarea { font:inherit;border:1px solid #bcc4b3;border-radius:7px;padding:8px 12px;background:white;color:inherit }
+  button { cursor:pointer } button:disabled { opacity:.5;cursor:default } textarea { width:100%;min-height:210px;font:13px/1.6 Consolas,monospace }
+  .bar { display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 } .panels { display:grid;grid-template-columns:1fr 1.1fr;gap:20px }
+  section { background:#fff;border:1px solid #dce0d5;border-radius:12px;padding:20px;min-width:0 } .table { overflow:auto }
+  table { border-collapse:collapse;width:100%;white-space:nowrap;font-size:14px } th,td { text-align:right;border-bottom:1px solid #e5e8e0;padding:9px } th:first-child,td:first-child { text-align:left }
+  th { color:#59644e } .total { font-size:30px;font-weight:650;color:#405b31 } #notice { min-height:1.7em;color:#8e4b14 } pre { white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px }
+  @media(max-width:800px) { .panels { grid-template-columns:1fr } main { padding:14px;margin:12px auto } }
+</style>
+<main>
+  <div class="muted">设备用量 / 报表回访</div>
+  <h1>用量统计不一致问题</h1>
+  <p class="muted">逐条提交回访记录，核对总览与明细。所有数据保存在当前服务内存中。</p>
+  <div class="bar"><label for="batch">回访记录</label><select id="batch"></select><button id="next">提交下一条</button><button id="reset">清空设备</button><span id="progress" class="muted"></span></div>
+  <p id="notice" role="status"></p>
+  <div class="panels">
+    <section><h2>上报内容</h2><label for="report" class="muted">可修改后单独提交</label><textarea id="report" spellcheck="false"></textarea><div class="bar"><button id="submit">提交 JSON</button><button id="refresh">刷新报表</button></div><h2>设备快照</h2><div id="devices"></div></section>
+    <section><div class="bar"><h2>汇总报表</h2><label for="window">窗口</label><select id="window"><option value="today">日用量</option><option value="month">月用量</option><option value="allTime">累计用量</option></select></div><div id="date" class="muted"></div><div id="total" class="total">0</div><div class="muted">Token 总量</div><h2>总览</h2><div id="overview" class="table"></div><h2>工具明细</h2><div id="clients" class="table"></div><h2>模型明细</h2><div id="models" class="table"></div></section>
+  </div>
+</main>
+<script src="/app.js"></script>
+</html>

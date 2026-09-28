@@ -1,5 +1,6 @@
 import { runStore } from "@/lib/runner/store";
 import type { RunEvent } from "@/lib/runner/types";
+import { publicRunEvent } from "@/lib/public";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,7 +34,8 @@ export async function GET(
       };
 
       const send = (event: RunEvent) => {
-        write(`event: ${event.kind}\ndata: ${JSON.stringify(event)}\n\n`);
+        const visible = publicRunEvent(event, run);
+        write(`event: ${visible.kind}\ndata: ${JSON.stringify(visible)}\n\n`);
       };
 
       // 首帧回放：新连接立刻拿到完整快照（含已产生的日志），实现刷新重连
@@ -50,7 +52,12 @@ export async function GET(
       }
 
       unsubscribe = runStore.subscribe(runId, (event) => {
-        send(event);
+        if (event.kind === "test" && event.test.status === "passed") {
+          // 替换客户端快照，立即回放该点在通过之前被隐藏的日志。
+          send({ kind: "snapshot", state: run });
+        } else {
+          send(event);
+        }
         if (event.kind === "done") {
           closed = true;
           unsubscribe?.();

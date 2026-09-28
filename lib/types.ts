@@ -60,6 +60,8 @@ export const RequestSchema = z.object({
 });
 
 export const ExpectSchema = z.object({
+  /** 原始响应字节的 SHA-256，用于二进制完整性校验 */
+  bodySha256: z.string().regex(/^[a-fA-F0-9]{64}$/).optional(),
   /** 期望 HTTP 状态码 */
   status: z.number().int().optional(),
   /** 期望响应 JSON 为「子集匹配」（支持嵌套对象） */
@@ -88,7 +90,7 @@ const baseFields = {
   /** 判题页/日志里用的完整名称（可以带根因关键词） */
   name: z.string().min(1),
   /**
-   * 详情页展示用的中性名称：首次 AC 之前用户只会看到它，
+   * 保留的中性展示名称；未通过的测试点当前只展示序号，
    * 所以不能泄露根因（例如不能出现「死锁」「脏缓存」「单位换算」）。
    */
   displayName: z.string().min(1).optional(),

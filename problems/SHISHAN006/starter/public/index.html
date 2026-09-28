@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>资料助手 · 会话回访</title>
+<style>
+  * { box-sizing: border-box; } body { margin: 0; background: #f5f3ef; color: #292823; font: 16px/1.7 system-ui, sans-serif; }
+  main { max-width: 820px; margin: 45px auto; padding: 24px; } h1 { margin-bottom: 0; } .muted { color: #716d64; }
+  button, select, textarea { font: inherit; border: 1px solid #c9c3b8; border-radius: 8px; padding: 8px 12px; }
+  button { cursor: pointer; background: #fff; } button:disabled { opacity: .5; cursor: default; } textarea { display: block; width: 100%; resize: vertical; margin: 14px 0; }
+  article { background: white; border: 1px solid #e1ddd5; border-radius: 12px; padding: 16px; margin: 16px 0; } .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .status { font-size: 13px; color: #716d64; } #notice { color: #965000; min-height: 1.7em; } .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+</style>
+<main>
+  <div class="muted">资料助手 / 历史会话回访</div>
+  <h1>流式回复不完整问题</h1>
+  <p class="muted">选择一份历史记录，发送消息后查看回复，也可以重新读取会话记录。</p>
+  <div class="toolbar"><label for="sample">历史记录</label><select id="sample"></select><button id="reload" disabled>重新读取记录</button><button id="fresh">新会话</button></div>
+  <section id="messages" aria-live="polite"></section>
+  <form id="form"><label for="prompt">发送消息</label><textarea id="prompt" rows="3" maxlength="4000" required>请给我一句问候。</textarea><button id="send">发送</button></form>
+  <p id="notice" role="status"></p>
+</main>
+<script src="/app.js"></script>
+</html>

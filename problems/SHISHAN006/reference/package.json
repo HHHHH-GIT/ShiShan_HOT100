@@ -1,0 +1,9 @@
+{
+  "name": "shishan006-reply-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline conversation reply service adapted from SQL-Final-Project",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "4.21.2" }
+}

@@ -14,7 +14,7 @@ import AdmZip from "adm-zip";
 const ROOT = process.cwd();
 const PROBLEMS_DIR = path.join(ROOT, "problems");
 
-const SKIP_DIRS = new Set(["target", "logs", ".git", ".idea", "node_modules", "__pycache__"]);
+const SKIP_DIRS = new Set(["target", "logs", ".git", ".idea", "node_modules", "__pycache__", ".runtime"]);
 const SKIP_EXTS = [".log", ".class", ".iml", ".zip"];
 
 function readProblemIds(): string[] {

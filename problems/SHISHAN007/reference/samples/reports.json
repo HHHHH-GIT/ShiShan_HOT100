@@ -1,0 +1,488 @@
+{
+  "batches": [
+    {
+      "id": "R001",
+      "label": "回访 1",
+      "reports": [
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T12:00:00Z",
+          "trackedClients": [
+            "alpha",
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 40,
+                  "outputTokens": 10,
+                  "cacheReadTokens": 50,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 20,
+                  "outputTokens": 15,
+                  "cacheReadTokens": 10,
+                  "cacheWriteTokens": 5
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 120,
+                  "outputTokens": 30,
+                  "cacheReadTokens": 150,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 60,
+                  "outputTokens": 45,
+                  "cacheReadTokens": 30,
+                  "cacheWriteTokens": 15
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 280,
+                  "outputTokens": 70,
+                  "cacheReadTokens": 350,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 140,
+                  "outputTokens": 105,
+                  "cacheReadTokens": 70,
+                  "cacheWriteTokens": 35
+                }
+              }
+            }
+          }
+        },
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T12:01:00Z",
+          "trackedClients": [
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 25,
+                  "outputTokens": 20,
+                  "cacheReadTokens": 20,
+                  "cacheWriteTokens": 10
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 75,
+                  "outputTokens": 60,
+                  "cacheReadTokens": 60,
+                  "cacheWriteTokens": 30
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 175,
+                  "outputTokens": 140,
+                  "cacheReadTokens": 140,
+                  "cacheWriteTokens": 70
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "R002",
+      "label": "回访 2",
+      "reports": [
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T15:59:00Z",
+          "trackedClients": [
+            "alpha",
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 40,
+                  "outputTokens": 10,
+                  "cacheReadTokens": 50,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 20,
+                  "outputTokens": 15,
+                  "cacheReadTokens": 10,
+                  "cacheWriteTokens": 5
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 120,
+                  "outputTokens": 30,
+                  "cacheReadTokens": 150,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 60,
+                  "outputTokens": 45,
+                  "cacheReadTokens": 30,
+                  "cacheWriteTokens": 15
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 280,
+                  "outputTokens": 70,
+                  "cacheReadTokens": 350,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 140,
+                  "outputTokens": 105,
+                  "cacheReadTokens": 70,
+                  "cacheWriteTokens": 35
+                }
+              }
+            }
+          }
+        },
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T16:01:00Z",
+          "trackedClients": [
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 25,
+                  "outputTokens": 20,
+                  "cacheReadTokens": 20,
+                  "cacheWriteTokens": 10
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 75,
+                  "outputTokens": 60,
+                  "cacheReadTokens": 60,
+                  "cacheWriteTokens": 30
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 175,
+                  "outputTokens": 140,
+                  "cacheReadTokens": 140,
+                  "cacheWriteTokens": 70
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "R003",
+      "label": "回访 3",
+      "reports": [
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T15:59:00Z",
+          "trackedClients": [
+            "alpha",
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 40,
+                  "outputTokens": 10,
+                  "cacheReadTokens": 50,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 20,
+                  "outputTokens": 15,
+                  "cacheReadTokens": 10,
+                  "cacheWriteTokens": 5
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 120,
+                  "outputTokens": 30,
+                  "cacheReadTokens": 150,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 60,
+                  "outputTokens": 45,
+                  "cacheReadTokens": 30,
+                  "cacheWriteTokens": 15
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 280,
+                  "outputTokens": 70,
+                  "cacheReadTokens": 350,
+                  "cacheWriteTokens": 0
+                }
+              },
+              "beta": {
+                "model-b": {
+                  "inputTokens": 140,
+                  "outputTokens": 105,
+                  "cacheReadTokens": 70,
+                  "cacheWriteTokens": 35
+                }
+              }
+            }
+          }
+        },
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-29T00:00:00Z",
+          "limitsOnly": true,
+          "limits": {
+            "remaining": 70
+          }
+        },
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-29T00:01:00Z",
+          "limitsOnly": true,
+          "limits": {
+            "remaining": 65
+          }
+        },
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-29T00:02:00Z",
+          "trackedClients": [
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 25,
+                  "outputTokens": 20,
+                  "cacheReadTokens": 20,
+                  "cacheWriteTokens": 10
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 75,
+                  "outputTokens": 60,
+                  "cacheReadTokens": 60,
+                  "cacheWriteTokens": 30
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "beta": {
+                "model-b": {
+                  "inputTokens": 175,
+                  "outputTokens": 140,
+                  "cacheReadTokens": 140,
+                  "cacheWriteTokens": 70
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "R004",
+      "label": "回访 4",
+      "reports": [
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T12:00:00Z",
+          "trackedClients": [
+            "alpha",
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 7,
+                  "outputTokens": 11,
+                  "cacheReadTokens": 13,
+                  "cacheWriteTokens": 17
+                }
+              },
+              "beta": {
+                "model-shared": {
+                  "inputTokens": 19,
+                  "outputTokens": 23,
+                  "cacheReadTokens": 29,
+                  "cacheWriteTokens": 31
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 21,
+                  "outputTokens": 33,
+                  "cacheReadTokens": 39,
+                  "cacheWriteTokens": 51
+                }
+              },
+              "beta": {
+                "model-shared": {
+                  "inputTokens": 57,
+                  "outputTokens": 69,
+                  "cacheReadTokens": 87,
+                  "cacheWriteTokens": 93
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "alpha": {
+                "model-shared": {
+                  "inputTokens": 49,
+                  "outputTokens": 77,
+                  "cacheReadTokens": 91,
+                  "cacheWriteTokens": 119
+                }
+              },
+              "beta": {
+                "model-shared": {
+                  "inputTokens": 133,
+                  "outputTokens": 161,
+                  "cacheReadTokens": 203,
+                  "cacheWriteTokens": 217
+                }
+              }
+            }
+          }
+        },
+        {
+          "deviceId": "desk-a",
+          "updatedAt": "2026-09-28T12:01:00Z",
+          "trackedClients": [
+            "beta"
+          ],
+          "today": {
+            "clientModelComponents": {
+              "beta": {
+                "model-shared": {
+                  "inputTokens": 37,
+                  "outputTokens": 41,
+                  "cacheReadTokens": 43,
+                  "cacheWriteTokens": 47
+                }
+              }
+            }
+          },
+          "month": {
+            "clientModelComponents": {
+              "beta": {
+                "model-shared": {
+                  "inputTokens": 111,
+                  "outputTokens": 123,
+                  "cacheReadTokens": 129,
+                  "cacheWriteTokens": 141
+                }
+              }
+            }
+          },
+          "allTime": {
+            "clientModelComponents": {
+              "beta": {
+                "model-shared": {
+                  "inputTokens": 259,
+                  "outputTokens": 287,
+                  "cacheReadTokens": 301,
+                  "cacheWriteTokens": 329
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
