@@ -1,0 +1,57 @@
+server:
+  port: 18088
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+
+spring:
+  profiles:
+    active: dev
+  main:
+    allow-circular-references: true
+    banner-mode: off
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:sky_take_out;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER
+    username: sa
+    password: ''
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.sky.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  file:
+    name: ${SHISHAN_LOG_PATH:logs/app.log}
+  charset:
+    file: UTF-8
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.sky: INFO
+
+sky:
+  jwt:
+    admin-secret-key: itcast
+    admin-ttl: 86400000
+    admin-token-name: token
+    user-secret-key: shuzhi667
+    user-ttl: 86400000
+    user-token-name: authentication
+  alioss:
+    endpoint: mock
+    access-key-id: mock_key
+    access-key-secret: mock_secret
+    bucket-name: mock_bucket
+  wechat:
+    appid: mock_appid
+    secret: mock_secret

@@ -1,0 +1,19 @@
+{
+  "id": "SHISHAN009",
+  "title": "暴风雨中的外卖系统",
+  "difficulty": "legendary_grandmaster",
+  "tags": [
+    "Java",
+    "多线程",
+    "数据一致性"
+  ],
+  "summary": "高并发外卖点餐与履约服务在晚高峰与恶劣天气下面临连环故障：菜品状态不同步、优惠抵扣金额失真、购物车操作偶发阻塞、批量统计出现跳变与精度截断。",
+  "apiContract": "端口固定为 `18088`，心跳接口为 `GET /hello`。\n\n| 接口 | 方法 | 请求体 / 查询参数 | 预期响应 |\n| --- | --- | --- | --- |\n| `/hello` | GET | - | `200` + `{\"status\":\"ok\"}` |\n| `/admin/employee/login` | POST | `{\"username\":\"admin\",\"password\":\"123456\"}` | `200` + `code=1`，返回管理端鉴权凭证 |\n| `/user/user/login` | POST | `{\"code\":\"test_code\"}` | `200` + `code=1`，返回用户端鉴权凭证 |\n| `/admin/dish/page` | GET | `?page=1&pageSize=10` | `200` + `code=1`，分页菜品列表（雪花 ID 必须以字符串输出） |\n| `/admin/dish` | POST | `{\"name\":\"新品\",\"categoryId\":1,\"price\":28.00,...}` | `200` + `code=1`，录入新菜品及规格 |\n| `/admin/dish` | PUT | `{\"id\":\"...\",\"name\":\"修改名\",...}` | `200` + `code=1`，更新菜品并保证用户端数据同步 |\n| `/admin/dish` | DELETE | `?ids=101,102` | `200` + `code=1`，批量删除菜品及关联规格（原子操作） |\n| `/user/dish/list` | GET | `?categoryId=1` | `200` + `code=1`，用户端菜品列表 |\n| `/user/setmeal/dish/:id` | GET | - | `200` + `code=1`，套餐菜品规格清单（返回对象必须独立安全） |\n| `/user/shoppingCart/add` | POST | `{\"dishId\":101}` | `200` + `code=1`，购物车添加菜品 |\n| `/user/shoppingCart/sub` | POST | `{\"dishId\":101}` | `200` + `code=1`，购物车扣减菜品 |\n| `/user/shoppingCart/clean` | DELETE | - | `200` + `code=1`，清空当前用户购物车 |\n| `/user/order/submit` | POST | `{\"addressBookId\":1,...}` | `200` + `code=1`，提交订单（精确金额计算与优惠核销） |\n| `/admin/order/confirm` | PUT | `{\"id\":...}` | `200` + `code=1`，接单状态流转 |\n| `/user/order/cancel/:id` | PUT | - | `200` + `code=1`，取消订单状态流转 |\n| `/admin/report/ordersOverview` | GET | `?begin=2026-09-01&end=2026-09-07` | `200` + `code=1`，日度订单统计（自然日连续完整） |\n| `/admin/report/orderList` | GET | `?page=1&pageSize=20` | `200` + `code=1`，多线程安全报表导出列表 |\n\n约定：\n\n- 管理端与用户端接口鉴权隔离，请求头分别携带 `token` 与 `authentication`。\n- 雪花算法生成的 64 位整型 ID 必须序列化为 JSON 字符串，防止前端精度溢出。\n- 菜品变更后，用户端查询必须与数据库保持最终状态同步。\n- 批量删除菜品具备完整事务保障，任意子项失败必须全量回滚。\n- 优惠券抵扣与实付金额必须满足商业精确度，不能发生分位截断误差。\n- 订单流转、购物车修改必须保证多用户高并发下的数据严密性。",
+  "heartbeat": {
+    "port": 18088,
+    "path": "/hello"
+  },
+  "logPath": "logs/app.log",
+  "dist": "dist/SHISHAN009.zip",
+  "startCommand": "mvn spring-boot:run"
+}

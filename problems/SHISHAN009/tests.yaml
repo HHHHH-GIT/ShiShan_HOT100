@@ -1,0 +1,516 @@
+version: 1
+baseUrl: "http://127.0.0.1:18088"
+vars:
+  adminUsername: "admin"
+  adminPassword: "123456"
+  wxCode: "mock_user_1"
+
+tests:
+  - id: heartbeat
+    type: http
+    name: 心跳探活
+    displayName: 服务就绪状态检测
+    description: 验证应用在 18088 端口正常启动并响应 /hello
+    request:
+      method: GET
+      url: "${baseUrl}/hello"
+      timeoutMs: 3000
+    expect:
+      status: 200
+      json:
+        status: ok
+
+  - id: auth-unauthorized-rejection
+    type: http
+    name: 未授权访问阻断
+    displayName: 接口未授权访问拦截验证
+    description: 验证未携带有效凭证的请求被拦截器阻断返回 HTTP 401
+    request:
+      method: GET
+      url: "${baseUrl}/admin/dish/page?page=1&pageSize=10"
+      timeoutMs: 3000
+    expect:
+      status: 401
+
+  - id: auth-admin-and-user-flow
+    type: workflow
+    name: 管理员与普通用户基础鉴权登录
+    displayName: 基础用户鉴权登录流程
+    description: 验证管理员账号密码登录与用户端凭证换取 Token 的基础流程
+    steps:
+      - id: admin-login
+        name: 管理员登录
+        request:
+          method: POST
+          url: "${baseUrl}/admin/employee/login"
+          json:
+            username: "${adminUsername}"
+            password: "${adminPassword}"
+        extract:
+          adminToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: user-login
+        name: 用户微信静默登录
+        request:
+          method: POST
+          url: "${baseUrl}/user/user/login"
+          json:
+            code: "${wxCode}"
+        extract:
+          userToken: "$.data.token"
+          userId: "$.data.id"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+  - id: snowflake-id-string-serialization
+    type: workflow
+    name: 雪花算法大整数 JSON 字符串序列化
+    displayName: 长整型标识符文本输出规范
+    description: 验证 64 位雪花算法主键在 JSON 序列化时转换为字符串，防止前端精度溢出丢失
+    steps:
+      - id: admin-login
+        name: 管理员登录
+        request:
+          method: POST
+          url: "${baseUrl}/admin/employee/login"
+          json:
+            username: "${adminUsername}"
+            password: "${adminPassword}"
+        extract:
+          adminToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: dish-page
+        name: 查询菜品分页
+        request:
+          method: GET
+          url: "${baseUrl}/admin/dish/page?page=1&pageSize=5"
+          headers:
+            token: "${adminToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+          contains:
+            - "\"id\":\"46\""
+
+  - id: user-dish-query-flow
+    type: workflow
+    name: 用户端菜品列表展示与分类过滤
+    displayName: 菜品分类数据查询隔离
+    description: 验证用户端按分类查询菜品能够准确返回菜品列表及关联口味规格
+    steps:
+      - id: user-login
+        name: 用户登录
+        request:
+          method: POST
+          url: "${baseUrl}/user/user/login"
+          json:
+            code: "${wxCode}"
+        extract:
+          userToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: list-category-drinks
+        name: 查询酒水饮料分类菜品
+        request:
+          method: GET
+          url: "${baseUrl}/user/dish/list?categoryId=11"
+          headers:
+            authentication: "${userToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+          contains:
+            - "王老吉"
+            - "北冰洋"
+
+  - id: setmeal-dish-immutability
+    type: workflow
+    name: 套餐菜品规格查询防御性拷贝
+    displayName: 套餐关联菜品查询数据独立性
+    description: 验证多次获取套餐菜品选项时返回对象彼此独立，内部属性不受外部操作污染
+    steps:
+      - id: user-login
+        name: 用户登录
+        request:
+          method: POST
+          url: "${baseUrl}/user/user/login"
+          json:
+            code: "${wxCode}"
+        extract:
+          userToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: get-setmeal-dishes
+        name: 首次查询套餐关联菜品
+        request:
+          method: GET
+          url: "${baseUrl}/user/setmeal/dish/1"
+          headers:
+            authentication: "${userToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+          contains:
+            - "老坛酸菜鱼"
+            - "米饭"
+
+      - id: get-setmeal-dishes-second
+        name: 二次查询套餐关联菜品
+        request:
+          method: GET
+          url: "${baseUrl}/user/setmeal/dish/1"
+          headers:
+            authentication: "${userToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+          contains:
+            - "老坛酸菜鱼"
+            - "米饭"
+
+  - id: order-amount-precision-calculation
+    type: workflow
+    name: 订单结算金额高精度商业计算
+    displayName: 订单提交金额精确度校验
+    description: 验证包含多件特定单价商品的购物车结算时，计算结果严格遵循商业精确度，无分位丢失
+    steps:
+      - id: user-login
+        name: 用户登录
+        request:
+          method: POST
+          url: "${baseUrl}/user/user/login"
+          json:
+            code: "${wxCode}"
+        extract:
+          userToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: clean-cart
+        name: 清空购物车
+        request:
+          method: DELETE
+          url: "${baseUrl}/user/shoppingCart/clean"
+          headers:
+            authentication: "${userToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-1
+        name: 加购第1件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-2
+        name: 加购第2件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-3
+        name: 加购第3件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-4
+        name: 加购第4件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-5
+        name: 加购第5件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-6
+        name: 加购第6件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-dish-7
+        name: 加购第7件菜品70
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 70
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: submit-order
+        name: 提交结算订单
+        request:
+          method: POST
+          url: "${baseUrl}/user/order/submit"
+          headers:
+            authentication: "${userToken}"
+          json:
+            addressBookId: 1
+            payMethod: 1
+        expect:
+          status: 200
+          json:
+            code: 1
+            data:
+              orderAmount: 278.60
+
+  - id: order-coupon-floor-and-single-use
+    type: workflow
+    name: 优惠券抵扣零元保底与单次使用
+    displayName: 优惠券零元保底与单次使用
+    description: 验证优惠券面额大于订单总额时实付金额保底为零元，且优惠券只能成功抵扣一次
+    steps:
+      - id: user-login
+        name: 用户登录
+        request:
+          method: POST
+          url: "${baseUrl}/user/user/login"
+          json:
+            code: "${wxCode}"
+        extract:
+          userToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: clean-cart
+        name: 清空购物车
+        request:
+          method: DELETE
+          url: "${baseUrl}/user/shoppingCart/clean"
+          headers:
+            authentication: "${userToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: add-drink
+        name: 加购小额饮品
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 46
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: submit-with-coupon
+        name: 提交使用大额优惠券订单
+        request:
+          method: POST
+          url: "${baseUrl}/user/order/submit"
+          headers:
+            authentication: "${userToken}"
+          json:
+            addressBookId: 1
+            payMethod: 1
+            couponId: 1
+        expect:
+          status: 200
+          json:
+            code: 1
+            data:
+              orderAmount: 0.0
+
+  - id: report-turnover-continuity
+    type: workflow
+    name: 营业额统计自然日连续性与零值对齐
+    displayName: 营业额统计自然日连续性
+    description: 验证查询跨周期营业额报表时，无销售自然日被正确补零，日期与数值序列严格对齐
+    steps:
+      - id: admin-login
+        name: 管理员登录
+        request:
+          method: POST
+          url: "${baseUrl}/admin/employee/login"
+          json:
+            username: "${adminUsername}"
+            password: "${adminPassword}"
+        extract:
+          adminToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: turnover-statistics
+        name: 查询包含无销售日的营业额报表
+        request:
+          method: GET
+          url: "${baseUrl}/admin/report/turnoverStatistics?begin=2026-09-01&end=2026-09-07"
+          headers:
+            token: "${adminToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+          contains:
+            - "120.0,85.0,210.0,0.0,150.0,0.0,279.0"
+
+  - id: shopping-cart-concurrency
+    type: load
+    name: 购物车并发加购与减购无死锁
+    displayName: 多会话购物车并发读写稳定运行
+    description: 验证多并发线程交叉调用加购与减购操作能够稳定完成，不发生互斥阻塞
+    pre:
+      - id: user-login
+        name: 用户登录预热
+        request:
+          method: POST
+          url: "${baseUrl}/user/user/login"
+          json:
+            code: "${wxCode}"
+        extract:
+          userToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+    concurrency: 4
+    rounds: 5
+    scenarios:
+      - name: 并发加购
+        weight: 1
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/add"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 46
+      - name: 并发减购
+        weight: 1
+        request:
+          method: POST
+          url: "${baseUrl}/user/shoppingCart/sub"
+          headers:
+            authentication: "${userToken}"
+          json:
+            dishId: 46
+    expect:
+      minSuccessRate: 0.95
+      maxP95Ms: 2000
+      maxMs: 3000
+
+  - id: report-export-list-safety
+    type: workflow
+    name: 报表导出集合多线程安全
+    displayName: 多线程报表数据导出完整性
+    description: 验证报表订单数据导出列表元素完整，未发生线程竞争导致元素缺失
+    steps:
+      - id: admin-login
+        name: 管理员登录
+        request:
+          method: POST
+          url: "${baseUrl}/admin/employee/login"
+          json:
+            username: "${adminUsername}"
+            password: "${adminPassword}"
+        extract:
+          adminToken: "$.data.token"
+        expect:
+          status: 200
+          json:
+            code: 1
+
+      - id: query-order-list
+        name: 查询区间订单完整列表
+        request:
+          method: GET
+          url: "${baseUrl}/admin/report/orderList?begin=2026-09-01&end=2026-09-07"
+          headers:
+            token: "${adminToken}"
+        expect:
+          status: 200
+          json:
+            code: 1
+          contains:
+            - "202609010001"
+            - "202609070001"

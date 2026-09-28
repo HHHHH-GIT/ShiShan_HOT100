@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.DishMapper">
+    <update id="update">
+        update dish
+        <set>
+            <if test="name!= null and name != ''">name = #{name},</if>
+            <if test="price!= null">price = #{price},</if>
+            <if test="status!= null">status = #{status},</if>
+            <if test="categoryId!= null">category_id = #{categoryId},</if>
+            <if test="description!= null and description!= ''">description = #{description},</if>
+            <if test="image!= null and image!= ''">image = #{image},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <delete id="deleteBatch">
+        <if test="ids != null and ids.size() > 0">
+            delete from dish where id in
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </delete>
+
+    <select id="page" resultType="com.sky.vo.DishVO">
+        select d.*, c.name as categoryName from dish d left join category c on d.category_id = c.id
+        <where>
+            <if test="name!= null and name!= ''">and d.name like concat('%',#{name},'%')</if>
+            <if test="categoryId != null">and d.category_id = #{categoryId}</if>
+            <if test="status!= null">and d.status = #{status}</if>
+        </where>
+    </select>
+    <select id="getByIds" resultType="com.sky.entity.Dish">
+        select * from dish where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from dish
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+        </where>
+    </select>
+
+    <select id="sumByMap" resultType="java.lang.Double">
+        select sum(amount) from orders
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
+</mapper>

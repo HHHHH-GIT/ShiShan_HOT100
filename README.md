@@ -66,6 +66,7 @@
 | **06** | [SHISHAN006 · 流式回复不完整问题](problems/SHISHAN006) | Expert | `JavaScript` `流式传输` `SSE` | 回复有时残缺或空白，却显示完成；重新打开历史会话后仍不完整。 |
 | **07** | [SHISHAN007 · 用量统计不一致问题](problems/SHISHAN007) | Master | `JavaScript` `数据一致性` `读写时序` | 多设备用量报表的合计与明细不一致，交接班及额度刷新后出现异常数字。 |
 | **08** | [SHISHAN008 · 张冠李戴](problems/SHISHAN008) | Candidate Master | `Python` `数据一致性` `缓存` | 切换账号后报告归属异常，本人分析被跳过；摘要与正文内容也不一致。 |
+| **09** | [SHISHAN009 · 暴风雨中的外卖系统](problems/SHISHAN009) | <span style="font-weight:bold"><span style="color:#000000">L</span><span style="color:#ff0000">egendary Grandmaster (彩虹)</span></span> | `Java` `多线程` `数据一致性` | 晚高峰与恶劣天气下菜品上下架不同步、优惠扣减失真、购物车偶发超时、报表数据跳变。 |
 
 *(更多经典分布式、高并发、内存泄漏、事务传播等屎山题目持续扩建中，欢迎提交 Issue / PR 贡献！)*
 

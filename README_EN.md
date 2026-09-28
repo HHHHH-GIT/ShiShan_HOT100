@@ -63,6 +63,7 @@ Every problem is a **working but bug-ridden** Spring Boot backend service. Downl
 | **06** | [SHISHAN006 · Incomplete Streaming Replies](problems/SHISHAN006) | Expert | `JavaScript` `Streaming` `SSE` | Replies can be incomplete or empty while marked complete, including after reloading history. |
 | **07** | [SHISHAN007 · Inconsistent Usage Statistics](problems/SHISHAN007) | Master | `JavaScript` `Data Consistency` `Read/Write Ordering` | Usage totals and breakdowns disagree around shift changes and quota refreshes. |
 | **08** | [SHISHAN008 · Mistaken Identity](problems/SHISHAN008) | Candidate Master | `Python` `Data Consistency` `Caching` | Switching accounts changes report ownership and availability; summary and source views disagree. |
+| **09** | [SHISHAN009 · Delivery System in the Storm](problems/SHISHAN009) | Legendary Grandmaster | `Java` `Multithreading` `Data Consistency` | Peak-hour status sync failures, coupon deduction inaccuracies, cart timeouts, and report fluctuations. |
 
 ---
 
